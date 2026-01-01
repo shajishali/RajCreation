@@ -44,6 +44,13 @@
     box-sizing: border-box;
 }
 
+html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
 html {
     font-size: var(--font-size-base);
     scroll-behavior: smooth;
@@ -104,12 +111,20 @@ body {
     top: 0;
     z-index: 100;
     box-shadow: var(--shadow);
+    width: 100%;
+    margin: 0;
+    left: 0;
+    right: 0;
 }
 
 .header .container {
     display: flex;
     flex-direction: column;
     gap: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 var(--spacing-md);
+    margin: 0;
 }
 
 .header-content {
@@ -573,15 +588,33 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    display: none;
+    display: none !important;
     align-items: center;
     justify-content: center;
     background-color: var(--bg-secondary);
-    z-index: 10;
+    z-index: 9;
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 .offline-state.active {
     display: flex;
+}
+
+/* Hide offline state when thumbnail exists */
+.video-wrapper .live-video-thumbnail ~ .offline-state {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: 1 !important;
+}
+
+/* Additional rule for when thumbnail is present */
+.video-wrapper:has(.live-video-thumbnail) .offline-state {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    z-index: 1 !important;
 }
 
 .offline-content {
@@ -2983,6 +3016,84 @@ body.font-size-extra-large * {
     }
 }
 
+/* Live Video Thumbnail Styles */
+.live-video-thumbnail {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 15 !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    cursor: pointer !important;
+    display: block !important;
+    background-color: var(--bg-secondary, #1a1a1a) !important;
+}
+
+.thumbnail-play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 11;
+    width: 80px;
+    height: 80px;
+    background-color: rgba(255, 68, 68, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.thumbnail-play-overlay:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background-color: rgba(255, 68, 68, 1);
+    box-shadow: 0 6px 16px rgba(255, 68, 68, 0.6);
+}
+
+.thumbnail-play-button {
+    font-size: 2rem;
+    color: white;
+    margin-left: 4px;
+}
+
+/* Hide YoloLiv Comments/Chat Section */
+iframe[src*="yololiv"] {
+    /* Try to hide the comments section within YoloLiv iframe */
+}
+
+/* If YoloLiv shows comments in a separate element, hide it */
+.yolo-comments,
+.yolo-chat,
+[class*="comment"],
+[class*="chat"],
+#yolo-chat,
+#yolo-comments,
+.live-stream-embed-container [class*="comment"],
+.live-stream-embed-container [class*="chat"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+}
+
+/* Force video wrapper to only show video, no sidebars */
+.video-wrapper iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.live-stream-embed-container iframe {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
 /* Print Styles */
 @media print {
     .header,
@@ -2993,6 +3104,10 @@ body.font-size-extra-large * {
     .video-wrapper {
         padding-bottom: 0;
         height: 400px;
+    }
+    
+    .live-video-thumbnail {
+        display: none !important;
     }
 }
 

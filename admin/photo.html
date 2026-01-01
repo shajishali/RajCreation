@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Photo Management - RajCreation Live</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: rgba(26, 26, 26, 0.5);
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ff4444, #ff6666);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header p {
+            color: #999;
+            font-size: 1.1rem;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+        
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #ff6666;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 68, 68, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #2a2a2a;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #333;
+            transform: translateY(-2px);
+        }
+        
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .photo-card {
+            background: #2a2a2a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .photo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(255, 68, 68, 0.3);
+            border-color: #ff4444;
+        }
+        
+        .photo-thumbnail {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background: #1a1a1a;
+        }
+        
+        .photo-thumbnail img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-info {
+            padding: 1.25rem;
+        }
+        
+        .photo-title {
+            margin: 0 0 0.75rem 0;
+            color: #fff;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        .photo-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            color: #999;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        
+        .photo-description {
+            color: #ccc;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .photo-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-edit {
+            background: #4a9eff;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #6ab0ff;
+        }
+        
+        .btn-delete {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #ff6666;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.75rem;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            color: #fff;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff4444;
+        }
+        
+        .form-hint {
+            display: block;
+            margin-top: 0.5rem;
+            color: #999;
+            font-size: 0.875rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .password-toggle {
+            position: relative;
+        }
+        
+        .password-toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+        }
+        
+        .password-toggle-btn:hover {
+            color: #fff;
+        }
+        
+        @media (max-width: 768px) {
+            .photos-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Photo Management</h1>
+            <p>Create and manage photo cards for your website</p>
+        </div>
+        
+        <div class="actions">
+            <button class="btn btn-primary" onclick="openAddPhotoModal()">➕ Add New Photo</button>
+            <button class="btn btn-secondary" onclick="goToMainSite()">🏠 Back to Website</button>
+        </div>
+        
+        <div id="photosGrid" class="photos-grid">
+            <!-- Photos will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Add/Edit Photo Modal -->
+    <div id="photoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Photo</h2>
+                <button class="close-btn" onclick="closeModal()">×</button>
+            </div>
+            
+            <form id="photoForm" onsubmit="savePhoto(event)">
+                <input type="hidden" id="photoIndex" value="">
+                
+                <div class="form-group">
+                    <label>Photo Title</label>
+                    <input type="text" id="photoTitle" placeholder="Program Title 1" required>
+                    <span class="form-hint">Enter a descriptive title for your photo/event</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Thumbnail Image</label>
+                    <input type="file" id="thumbnailFile" accept="image/*" onchange="handleThumbnailUpload(event)" style="display: none;">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('thumbnailFile').click()" style="flex: 1;">
+                            📁 Upload from Device
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="toggleThumbnailInput()" style="flex: 1;">
+                            🔗 Or Use URL
+                        </button>
+                    </div>
+                    <input type="text" id="photoThumbnail" placeholder="Or paste image URL here (https://example.com/image.jpg)" style="display: none;">
+                    <div id="thumbnailPreview" style="margin-top: 1rem; display: none;">
+                        <img id="thumbnailPreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #444;">
+                    </div>
+                    <span class="form-hint">Upload an image from your device or paste a URL</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Full Size Image (Optional)</label>
+                    <input type="file" id="fullImageFile" accept="image/*" onchange="handleFullImageUpload(event)" style="display: none;">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('fullImageFile').click()" style="flex: 1;">
+                            📁 Upload Full Image
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="toggleFullImageInput()" style="flex: 1;">
+                            🔗 Or Use URL
+                        </button>
+                    </div>
+                    <input type="url" id="photoFullImage" placeholder="Or paste full image URL here" style="display: none;">
+                    <span class="form-hint">Optional: Larger image for lightbox view (if not provided, thumbnail will be used)</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="text" id="photoDate" placeholder="January 15, 2024" required>
+                    <span class="form-hint">Event or photo date</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="photoLocation" placeholder="Event Location" required>
+                    <span class="form-hint">Event location or venue</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="photoDescription" placeholder="Event description or details" required></textarea>
+                    <span class="form-hint">Brief description of the event or program</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Program URL (3rd Party App)</label>
+                    <input type="url" id="photoProgramUrl" placeholder="https://example.com/program" required>
+                    <span class="form-hint">URL to the external program/3rd party app</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-toggle">
+                        <input type="password" id="photoPassword" placeholder="Enter password to access program" required>
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('photoPassword', this)">👁️</button>
+                    </div>
+                    <span class="form-hint">Password required to access the program URL</span>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Photo</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let thumbnailInputMode = 'file';
+        let fullImageInputMode = 'file';
+        
+        // Load photos from localStorage
+        function loadPhotos() {
+            const grid = document.getElementById('photosGrid');
+            const photosJson = localStorage.getItem('eventPhotosList');
+            const photos = photosJson ? JSON.parse(photosJson) : [];
+            
+            if (photos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">📸</div>
+                        <h2 style="color: #fff; margin-bottom: 0.5rem;">No Photos Yet</h2>
+                        <p>Click "Add New Photo" to create your first photo card</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            photos.forEach((photo, index) => {
+                html += `
+                    <div class="photo-card">
+                        <div class="photo-thumbnail">
+                            <img src="${photo.thumbnail}" alt="${photo.title}">
+                        </div>
+                        <div class="photo-info">
+                            <h3 class="photo-title">${photo.title}</h3>
+                            <div class="photo-meta">
+                                <span>📅 ${photo.date}</span>
+                                <span>📍 ${photo.location}</span>
+                            </div>
+                            <p class="photo-description">${photo.description}</p>
+                            <div class="photo-actions">
+                                <button class="btn-small btn-edit" onclick="editPhoto(${index})">✏️ Edit</button>
+                                <button class="btn-small btn-delete" onclick="deletePhoto(${index})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+        
+        // Handle thumbnail file upload
+        function handleThumbnailUpload(event) {
+            const file = event.target.files[0];
+            const thumbnailInput = document.getElementById('photoThumbnail');
+            
+            if (!file) {
+                if (thumbnailInput) thumbnailInput.value = '';
+                const preview = document.getElementById('thumbnailPreview');
+                if (preview) preview.style.display = 'none';
+                return;
+            }
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file!');
+                event.target.value = '';
+                if (thumbnailInput) thumbnailInput.value = '';
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size must be less than 5MB. Please compress the image or use a URL instead.');
+                event.target.value = '';
+                if (thumbnailInput) thumbnailInput.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                // Always set the value, even if input is hidden
+                if (thumbnailInput) {
+                    thumbnailInput.value = base64Data;
+                    // Make sure the input exists in DOM even if hidden
+                    if (!thumbnailInput.parentNode) {
+                        const form = document.getElementById('photoForm');
+                        if (form) form.appendChild(thumbnailInput);
+                    }
+                }
+                const preview = document.getElementById('thumbnailPreview');
+                const previewImg = document.getElementById('thumbnailPreviewImg');
+                if (previewImg) {
+                    previewImg.src = base64Data;
+                }
+                if (preview) {
+                    preview.style.display = 'block';
+                }
+            };
+            reader.onerror = function() {
+                alert('Error reading file. Please try again.');
+                event.target.value = '';
+                if (thumbnailInput) thumbnailInput.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Handle full image file upload
+        function handleFullImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                document.getElementById('photoFullImage').value = '';
+                return;
+            }
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file!');
+                event.target.value = '';
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size must be less than 5MB. Please compress the image or use a URL instead.');
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                document.getElementById('photoFullImage').value = base64Data;
+            };
+            reader.onerror = function() {
+                alert('Error reading file. Please try again.');
+                event.target.value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Toggle thumbnail input mode
+        function toggleThumbnailInput() {
+            const urlInput = document.getElementById('photoThumbnail');
+            const fileInput = document.getElementById('thumbnailFile');
+            
+            if (thumbnailInputMode === 'file') {
+                thumbnailInputMode = 'url';
+                // Don't clear if it has base64 data (from file upload)
+                const currentValue = urlInput.value;
+                if (!currentValue || !currentValue.startsWith('data:image')) {
+                    urlInput.value = '';
+                }
+                urlInput.style.display = 'block';
+                urlInput.required = true;
+                fileInput.required = false;
+                fileInput.value = '';
+                urlInput.focus();
+            } else {
+                thumbnailInputMode = 'file';
+                // Only clear if it's a URL, not base64 data
+                const currentValue = urlInput.value;
+                if (currentValue && currentValue.startsWith('http')) {
+                    urlInput.value = '';
+                }
+                urlInput.style.display = 'none';
+                urlInput.required = false;
+                fileInput.required = true;
+            }
+        }
+        
+        // Toggle full image input mode
+        function toggleFullImageInput() {
+            const urlInput = document.getElementById('photoFullImage');
+            const fileInput = document.getElementById('fullImageFile');
+            
+            if (fullImageInputMode === 'file') {
+                fullImageInputMode = 'url';
+                urlInput.style.display = 'block';
+                fileInput.value = '';
+                urlInput.focus();
+            } else {
+                fullImageInputMode = 'file';
+                urlInput.style.display = 'none';
+                urlInput.value = '';
+            }
+        }
+        
+        // Toggle password visibility
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
+        }
+        
+        // Open add photo modal
+        function openAddPhotoModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Photo';
+            document.getElementById('photoForm').reset();
+            document.getElementById('photoIndex').value = '';
+            document.getElementById('thumbnailPreview').style.display = 'none';
+            document.getElementById('photoThumbnail').style.display = 'none';
+            document.getElementById('photoFullImage').style.display = 'none';
+            document.getElementById('thumbnailFile').required = true;
+            document.getElementById('photoThumbnail').required = false;
+            thumbnailInputMode = 'file';
+            fullImageInputMode = 'file';
+            document.getElementById('photoModal').classList.add('show');
+        }
+        
+        // Edit photo
+        function editPhoto(index) {
+            const photosJson = localStorage.getItem('eventPhotosList');
+            const photos = photosJson ? JSON.parse(photosJson) : [];
+            const photo = photos[index];
+            
+            if (!photo) return;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Photo';
+            document.getElementById('photoIndex').value = index;
+            document.getElementById('photoTitle').value = photo.title;
+            document.getElementById('photoDate').value = photo.date;
+            document.getElementById('photoLocation').value = photo.location;
+            document.getElementById('photoDescription').value = photo.description;
+            document.getElementById('photoProgramUrl').value = photo.programUrl;
+            document.getElementById('photoPassword').value = photo.password || '';
+            
+            // Handle thumbnail
+            const thumbnailValue = photo.thumbnail || '';
+            if (thumbnailValue.startsWith('data:image')) {
+                document.getElementById('photoThumbnail').value = thumbnailValue;
+                document.getElementById('photoThumbnail').style.display = 'none';
+                document.getElementById('thumbnailFile').required = false;
+                document.getElementById('photoThumbnail').required = true;
+                thumbnailInputMode = 'file';
+                const preview = document.getElementById('thumbnailPreview');
+                const previewImg = document.getElementById('thumbnailPreviewImg');
+                previewImg.src = thumbnailValue;
+                preview.style.display = 'block';
+            } else if (thumbnailValue.startsWith('http')) {
+                document.getElementById('photoThumbnail').value = thumbnailValue;
+                document.getElementById('photoThumbnail').style.display = 'block';
+                document.getElementById('thumbnailFile').required = false;
+                document.getElementById('photoThumbnail').required = true;
+                thumbnailInputMode = 'url';
+                const preview = document.getElementById('thumbnailPreview');
+                const previewImg = document.getElementById('thumbnailPreviewImg');
+                previewImg.src = thumbnailValue;
+                preview.style.display = 'block';
+            }
+            
+            // Handle full image
+            const fullImageValue = photo.fullImage || '';
+            if (fullImageValue.startsWith('data:image')) {
+                document.getElementById('photoFullImage').value = fullImageValue;
+                document.getElementById('photoFullImage').style.display = 'none';
+                fullImageInputMode = 'file';
+            } else if (fullImageValue.startsWith('http')) {
+                document.getElementById('photoFullImage').value = fullImageValue;
+                document.getElementById('photoFullImage').style.display = 'block';
+                fullImageInputMode = 'url';
+            }
+            
+            document.getElementById('photoModal').classList.add('show');
+        }
+        
+        // Save photo
+        function savePhoto(event) {
+            event.preventDefault();
+            
+            console.log('Save photo function called');
+            
+            try {
+                // Get all form values
+                const title = document.getElementById('photoTitle').value.trim();
+                const date = document.getElementById('photoDate').value.trim();
+                const location = document.getElementById('photoLocation').value.trim();
+                const description = document.getElementById('photoDescription').value.trim();
+                const programUrl = document.getElementById('photoProgramUrl').value.trim();
+                const password = document.getElementById('photoPassword').value.trim();
+                
+                console.log('Form values:', { title, date, location, description, programUrl, password: '***' });
+                
+                // Validate required fields
+                if (!title) {
+                    alert('⚠️ Please enter a photo title!');
+                    document.getElementById('photoTitle').focus();
+                    return false;
+                }
+                
+                if (!date) {
+                    alert('⚠️ Please enter a date!');
+                    document.getElementById('photoDate').focus();
+                    return false;
+                }
+                
+                if (!location) {
+                    alert('⚠️ Please enter a location!');
+                    document.getElementById('photoLocation').focus();
+                    return false;
+                }
+                
+                if (!description) {
+                    alert('⚠️ Please enter a description!');
+                    document.getElementById('photoDescription').focus();
+                    return false;
+                }
+                
+                if (!programUrl) {
+                    alert('⚠️ Please enter a program URL!');
+                    document.getElementById('photoProgramUrl').focus();
+                    return false;
+                }
+                
+                if (!password) {
+                    alert('⚠️ Please enter a password!');
+                    document.getElementById('photoPassword').focus();
+                    return false;
+                }
+                
+                // Get thumbnail - check both hidden input (for file upload) and visible input (for URL)
+                const thumbnailInput = document.getElementById('photoThumbnail');
+                let thumbnail = '';
+                
+                if (thumbnailInput) {
+                    thumbnail = thumbnailInput.value.trim();
+                    console.log('Thumbnail input found, value length:', thumbnail.length);
+                } else {
+                    console.error('Thumbnail input not found!');
+                }
+                
+                // If no thumbnail, check if we're editing and preserve existing
+                if (!thumbnail) {
+                    const index = document.getElementById('photoIndex').value;
+                    console.log('No thumbnail in input, checking if editing. Index:', index);
+                    if (index !== '' && index !== null) {
+                        const photosJson = localStorage.getItem('eventPhotosList');
+                        if (photosJson) {
+                            const photos = JSON.parse(photosJson);
+                            if (photos[index] && photos[index].thumbnail) {
+                                thumbnail = photos[index].thumbnail;
+                                console.log('Using existing thumbnail from photo', index);
+                            }
+                        }
+                    }
+                }
+                
+                // Validate thumbnail
+                if (!thumbnail) {
+                    alert('⚠️ Please upload a thumbnail image or enter a URL!\n\nClick "Upload from Device" or "Or Use URL" to add an image.');
+                    // Try to focus on upload button
+                    setTimeout(() => {
+                        const uploadBtn = document.querySelector('button[onclick*="thumbnailFile"]');
+                        if (uploadBtn) uploadBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
+                    return false;
+                }
+                
+                console.log('Thumbnail validated, length:', thumbnail.length, 'Is base64:', thumbnail.startsWith('data:'));
+                
+                // Get full image (optional - defaults to thumbnail if not provided)
+                const fullImageInput = document.getElementById('photoFullImage');
+                const fullImage = fullImageInput ? (fullImageInput.value.trim() || thumbnail) : thumbnail;
+                
+                // Create photo object
+                const photo = {
+                    title: title,
+                    thumbnail: thumbnail,
+                    fullImage: fullImage,
+                    date: date,
+                    location: location,
+                    description: description,
+                    programUrl: programUrl,
+                    password: password
+                };
+                
+                console.log('Photo object created:', { ...photo, thumbnail: thumbnail.substring(0, 50) + '...', password: '***' });
+                
+                // Get current photos array
+                const photosJson = localStorage.getItem('eventPhotosList');
+                let photos = photosJson ? JSON.parse(photosJson) : [];
+                
+                // Add or update photo
+                const index = document.getElementById('photoIndex').value;
+                if (index === '' || index === null) {
+                    // Add new photo
+                    photos.push(photo);
+                    console.log('Added new photo, total photos:', photos.length);
+                } else {
+                    // Update existing photo
+                    const photoIndex = parseInt(index);
+                    if (photoIndex >= 0 && photoIndex < photos.length) {
+                        photos[photoIndex] = photo;
+                        console.log('Updated photo at index:', photoIndex);
+                    } else {
+                        photos.push(photo);
+                        console.log('Index out of range, added as new photo');
+                    }
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('eventPhotosList', JSON.stringify(photos));
+                console.log('Saved to localStorage');
+                
+                // Close modal and refresh
+                closeModal();
+                loadPhotos();
+                
+                // Show success message
+                alert('✅ Photo saved successfully!');
+                return true;
+                
+            } catch (error) {
+                console.error('Error saving photo:', error);
+                alert('❌ Error saving photo: ' + error.message + '\n\nCheck the browser console for details.');
+                return false;
+            }
+        }
+        
+        // Delete photo
+        function deletePhoto(index) {
+            if (!confirm('Are you sure you want to delete this photo?')) {
+                return;
+            }
+            
+            const photosJson = localStorage.getItem('eventPhotosList');
+            let photos = photosJson ? JSON.parse(photosJson) : [];
+            
+            photos.splice(index, 1);
+            localStorage.setItem('eventPhotosList', JSON.stringify(photos));
+            loadPhotos();
+            
+            alert('✅ Photo deleted successfully!');
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('photoModal').classList.remove('show');
+        }
+        
+        // Go to main site
+        function goToMainSite() {
+            window.location.href = '../photo.html';
+        }
+        
+        // Load photos on page load
+        document.addEventListener('DOMContentLoaded', loadPhotos);
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // Handle URL input preview for thumbnail
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlInput = document.getElementById('photoThumbnail');
+            urlInput.addEventListener('input', function() {
+                const value = this.value.trim();
+                if (value) {
+                    if (value.startsWith('http') || value.startsWith('data:')) {
+                        const preview = document.getElementById('thumbnailPreview');
+                        const previewImg = document.getElementById('thumbnailPreviewImg');
+                        previewImg.onerror = function() {
+                            preview.style.display = 'none';
+                        };
+                        previewImg.src = value;
+                        preview.style.display = 'block';
+                    }
+                } else {
+                    document.getElementById('thumbnailPreview').style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

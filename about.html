@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RajCreation Live - About Us">
+    <meta name="keywords" content="RajCreation, about, mission, team">
+    <meta name="author" content="RajCreation">
+    <meta name="robots" content="index, follow">
+    
+    <title>About Us - RajCreation Live</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+    
+    <!-- Early error suppression for third-party scripts -->
+    <script>
+    (function() {
+        'use strict';
+        const suppressPatterns = [
+            'XML Parsing Error', 'datacenter.live.qcloud.com', 'not well-formed', 'qcloud.com',
+            'tcplayer', 'mozPressure', 'mozInputSource', 'VideoJS', 'downloadable font',
+            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com'
+        ];
+        function shouldSuppress(msg) {
+            const msgStr = String(msg).toLowerCase();
+            return suppressPatterns.some(p => msgStr.includes(p.toLowerCase()));
+        }
+        const origError = console.error;
+        console.error = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origError.apply(console, args);
+        };
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origWarn.apply(console, args);
+        };
+        const origLog = console.log;
+        console.log = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origLog.apply(console, args);
+        };
+        window.addEventListener('error', function(e) {
+            const msg = (e.message || '') + ' ' + (e.filename || '');
+            if (shouldSuppress(msg)) { e.preventDefault(); e.stopPropagation(); return true; }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+            if (shouldSuppress(String(e.reason || ''))) { e.preventDefault(); return true; }
+        });
+    })();
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="site-title">RajCreation Live</h1>
+                
+                <!-- Header Controls -->
+                <div class="header-controls">
+                    <button class="header-control-btn search-btn" id="searchBtn" aria-label="Search" title="Search">
+                        <span>🔍</span>
+                    </button>
+                    
+                    <button class="header-control-btn theme-switcher" id="themeSwitcher" aria-label="Toggle theme" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    
+                </div>
+                <nav class="header-nav">
+                    <ul class="header-nav-menu" id="navMenu">
+                        <li><a href="index.html" class="header-nav-link">Home</a></li>
+                        <li><a href="video.html" class="header-nav-link">Video</a></li>
+                        <li><a href="photo.html" class="header-nav-link">Photo</a></li>
+                        <li><a href="about.html" class="header-nav-link active">About</a></li>
+                        <li><a href="schedule.html" class="header-nav-link">Schedule</a></li>
+                        <li><a href="contact.html" class="header-nav-link">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="live-indicator" id="liveIndicator">
+                    <span class="live-dot"></span>
+                    <span class="live-text">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb-list" id="breadcrumbList">
+                <li><a href="index.html">Home</a></li>
+                <li>About</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- About Section -->
+            <section class="about-section">
+                <div class="page-header">
+                    <h2 class="page-title">About RajCreation Live</h2>
+                    <p class="page-description">Learn more about our mission, history, and the team behind RajCreation Live</p>
+                </div>
+
+                <!-- Mission Section -->
+                <div class="about-content">
+                    <div class="about-block">
+                        <div class="about-icon">🎯</div>
+                        <h3 class="about-block-title">Our Mission</h3>
+                        <p class="about-block-text">
+                            RajCreation Live is dedicated to bringing you high-quality live telecast streaming and recorded content. 
+                            Our mission is to provide an accessible platform for viewers to enjoy live events, programs, and archived 
+                            content from anywhere in the world. We strive to deliver seamless streaming experiences and maintain a 
+                            comprehensive archive of all our broadcasts.
+                        </p>
+                    </div>
+
+                    <div class="about-block">
+                        <div class="about-icon">📖</div>
+                        <h3 class="about-block-title">Our Story</h3>
+                        <p class="about-block-text">
+                            RajCreation Live was founded with a vision to create a premier destination for live telecast streaming. 
+                            Since our inception, we have been committed to delivering exceptional content and maintaining the highest 
+                            standards in broadcasting. We continuously work to improve our platform and expand our offerings to serve 
+                            our growing community of viewers.
+                        </p>
+                    </div>
+
+                    <div class="about-block">
+                        <div class="about-icon">👥</div>
+                        <h3 class="about-block-title">The Team</h3>
+                        <p class="about-block-text">
+                            Our team consists of passionate professionals dedicated to creating and delivering quality content. 
+                            From content creators to technical specialists, every member of the RajCreation Live team plays a crucial 
+                            role in bringing you the best streaming experience possible.
+                        </p>
+                    </div>
+
+                    <div class="about-block">
+                        <div class="about-icon">🏆</div>
+                        <h3 class="about-block-title">Achievements & Milestones</h3>
+                        <div class="achievements-list">
+                            <div class="achievement-item">
+                                <span class="achievement-year">2024</span>
+                                <div class="achievement-content">
+                                    <h4>Platform Launch</h4>
+                                    <p>Successfully launched RajCreation Live streaming platform</p>
+                                </div>
+                            </div>
+                            <div class="achievement-item">
+                                <span class="achievement-year">2024</span>
+                                <div class="achievement-content">
+                                    <h4>100+ Live Events</h4>
+                                    <p>Reached milestone of 100+ live streamed events</p>
+                                </div>
+                            </div>
+                            <div class="achievement-item">
+                                <span class="achievement-year">2024</span>
+                                <div class="achievement-content">
+                                    <h4>Growing Community</h4>
+                                    <p>Building a dedicated community of viewers and supporters</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Values Section -->
+                    <div class="about-values">
+                        <h3 class="about-section-title">Our Values</h3>
+                        <div class="values-grid">
+                            <div class="value-item">
+                                <div class="value-icon">✨</div>
+                                <h4>Quality</h4>
+                                <p>We are committed to delivering high-quality content and streaming experiences.</p>
+                            </div>
+                            <div class="value-item">
+                                <div class="value-icon">🌐</div>
+                                <h4>Accessibility</h4>
+                                <p>Making content accessible to viewers worldwide, anytime, anywhere.</p>
+                            </div>
+                            <div class="value-item">
+                                <div class="value-icon">💡</div>
+                                <h4>Innovation</h4>
+                                <p>Continuously improving and innovating to enhance user experience.</p>
+                            </div>
+                            <div class="value-item">
+                                <div class="value-icon">🤝</div>
+                                <h4>Community</h4>
+                                <p>Building and nurturing a strong community of engaged viewers.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonials Section -->
+                    <div class="testimonials-section">
+                        <h3 class="about-section-title">What Viewers Say</h3>
+                        <div class="testimonials-grid">
+                            <div class="testimonial-item">
+                                <div class="testimonial-content">
+                                    <p class="testimonial-text">"RajCreation Live provides excellent streaming quality and a great user experience. I love being able to watch past events too!"</p>
+                                </div>
+                                <div class="testimonial-author">
+                                    <strong>Viewer Name</strong>
+                                    <span>Regular Viewer</span>
+                                </div>
+                            </div>
+                            <div class="testimonial-item">
+                                <div class="testimonial-content">
+                                    <p class="testimonial-text">"The schedule feature is very helpful, and I appreciate being able to set reminders for upcoming events."</p>
+                                </div>
+                                <div class="testimonial-author">
+                                    <strong>Viewer Name</strong>
+                                    <span>Community Member</span>
+                                </div>
+                            </div>
+                            <div class="testimonial-item">
+                                <div class="testimonial-content">
+                                    <p class="testimonial-text">"Great platform for live events! The photo gallery and video archive make it easy to catch up on missed content."</p>
+                                </div>
+                                <div class="testimonial-author">
+                                    <strong>Viewer Name</strong>
+                                    <span>Event Enthusiast</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">RajCreation Live</h3>
+                    <p class="footer-description">Your premier destination for live telecast streaming.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-heading">Connect</h4>
+                    <p class="footer-text">Stay updated with our latest streams and updates.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 RajCreation</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button class="search-close" id="searchClose" aria-label="Close search">×</button>
+            </div>
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search videos, photos, events..." 
+                       autocomplete="off"
+                       aria-label="Search input">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Quick Links Menu -->
+    <div class="quick-links-menu" id="quickLinksMenu">
+        <button class="quick-links-toggle" id="quickLinksToggle" aria-label="Quick links" title="Quick links">
+            <span>⚡</span>
+        </button>
+        <div class="quick-links-content" id="quickLinksContent">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="video.html">📹 Recorded Videos</a></li>
+                <li><a href="photo.html">📸 Photo Gallery</a></li>
+                <li><a href="schedule.html">📅 Schedule</a></li>
+                <li><a href="about.html">ℹ️ About</a></li>
+                <li><a href="contact.html">✉️ Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>
+

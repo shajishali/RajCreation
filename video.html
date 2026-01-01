@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RajCreation Live - Recorded Videos">
+    <meta name="keywords" content="RajCreation, recorded videos, archive">
+    <meta name="author" content="RajCreation">
+    <meta name="robots" content="index, follow">
+    
+    <title>Recorded Videos - RajCreation Live</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+    
+    <!-- Early error suppression for third-party scripts -->
+    <script>
+    (function() {
+        'use strict';
+        const suppressPatterns = [
+            'XML Parsing Error', 'datacenter.live.qcloud.com', 'not well-formed', 'qcloud.com',
+            'tcplayer', 'mozPressure', 'mozInputSource', 'VideoJS', 'downloadable font',
+            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com'
+        ];
+        function shouldSuppress(msg) {
+            const msgStr = String(msg).toLowerCase();
+            return suppressPatterns.some(p => msgStr.includes(p.toLowerCase()));
+        }
+        const origError = console.error;
+        console.error = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origError.apply(console, args);
+        };
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origWarn.apply(console, args);
+        };
+        const origLog = console.log;
+        console.log = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origLog.apply(console, args);
+        };
+        window.addEventListener('error', function(e) {
+            const msg = (e.message || '') + ' ' + (e.filename || '');
+            if (shouldSuppress(msg)) { e.preventDefault(); e.stopPropagation(); return true; }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+            if (shouldSuppress(String(e.reason || ''))) { e.preventDefault(); return true; }
+        });
+    })();
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="site-title">RajCreation Live</h1>
+                
+                <!-- Header Controls -->
+                <div class="header-controls">
+                    <button class="header-control-btn search-btn" id="searchBtn" aria-label="Search" title="Search">
+                        <span>🔍</span>
+                    </button>
+                    
+                    <button class="header-control-btn theme-switcher" id="themeSwitcher" aria-label="Toggle theme" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    
+                </div>
+                <nav class="header-nav">
+                    <ul class="header-nav-menu" id="navMenu">
+                        <li><a href="index.html" class="header-nav-link">Home</a></li>
+                        <li><a href="video.html" class="header-nav-link active">Video</a></li>
+                        <li><a href="photo.html" class="header-nav-link">Photo</a></li>
+                        <li><a href="about.html" class="header-nav-link">About</a></li>
+                        <li><a href="schedule.html" class="header-nav-link">Schedule</a></li>
+                        <li><a href="contact.html" class="header-nav-link">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="live-indicator" id="liveIndicator">
+                    <span class="live-dot"></span>
+                    <span class="live-text">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb-list" id="breadcrumbList">
+                <li><a href="index.html">Home</a></li>
+                <li>Video</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Recorded Videos Section -->
+            <section class="recorded-videos-section">
+                <!-- Admin Edit Buttons (Only visible to logged-in admins) -->
+                <div class="admin-edit-buttons" id="adminEditButtonsVideo">
+                    <button class="admin-edit-btn" id="editRecordedVideosBtn" title="Manage Videos">
+                        <span>📹</span>
+                        <span>Manage Videos</span>
+                    </button>
+                </div>
+
+                <!-- Videos Grid -->
+                <div class="videos-grid-container" id="videosGridContainer">
+                    <!-- Videos will be loaded here -->
+                </div>
+                
+                <!-- Video Player Container (hidden by default) -->
+                <div class="video-container" id="videoPlayerContainer" style="display: none;">
+                    <div class="video-wrapper" id="recordedVideoWrapper">
+                        <!-- Video embed will be loaded here when play button is clicked -->
+                    </div>
+                    <button class="back-to-videos-btn" onclick="backToVideosList()" style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: #ff4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        ← Back to Videos
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">RajCreation Live</h3>
+                    <p class="footer-description">Your premier destination for live telecast streaming.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-heading">Connect</h4>
+                    <p class="footer-text">Stay updated with our latest streams and updates.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 RajCreation</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button class="search-close" id="searchClose" aria-label="Close search">×</button>
+            </div>
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search videos, photos, events..." 
+                       autocomplete="off"
+                       aria-label="Search input">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Quick Links Menu -->
+    <div class="quick-links-menu" id="quickLinksMenu">
+        <button class="quick-links-toggle" id="quickLinksToggle" aria-label="Quick links" title="Quick links">
+            <span>⚡</span>
+        </button>
+        <div class="quick-links-content" id="quickLinksContent">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="video.html">📹 Recorded Videos</a></li>
+                <li><a href="photo.html">📸 Photo Gallery</a></li>
+                <li><a href="schedule.html">📅 Schedule</a></li>
+                <li><a href="about.html">ℹ️ About</a></li>
+                <li><a href="contact.html">✉️ Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        // Load and display videos
+        function loadVideos() {
+            const container = document.getElementById('videosGridContainer');
+            const playerContainer = document.getElementById('videoPlayerContainer');
+            
+            // Try to load videos from localStorage
+            const videosJson = localStorage.getItem('recordedVideosList');
+            const videos = videosJson ? JSON.parse(videosJson) : [];
+            
+            if (videos.length === 0) {
+                container.innerHTML = `
+                    <div class="offline-state" style="text-align: center; padding: 4rem 2rem; color: #999;">
+                        <div class="offline-icon" style="font-size: 4rem; margin-bottom: 1rem;">📹</div>
+                        <h2 style="color: #fff; margin-bottom: 0.5rem;">No Videos Found</h2>
+                        <p>Videos will be displayed here. Login to admin to add videos.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create videos grid matching screenshot style
+            let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; margin-top: 2rem; padding: 0 1rem;">';
+            videos.forEach((video, index) => {
+                html += `
+                    <div class="video-card" style="background: #2a2a2a; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;" onclick="playVideo(${index})">
+                        <div class="video-thumbnail-container" style="position: relative; width: 100%; padding-top: 56.25%; background: #1a1a1a;">
+                            <img src="${video.thumbnail || 'https://via.placeholder.com/640x360/2a2a2a/fff?text=Video+' + (index + 1)}" 
+                                 alt="${video.title}" 
+                                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                            <div class="duration-badge" style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
+                                ${video.duration || '00:00'}
+                            </div>
+                        </div>
+                        <div style="padding: 1.25rem;">
+                            <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.125rem; font-weight: 600;">${video.title}</h3>
+                            <div style="display: flex; align-items: center; gap: 1rem; color: #999; font-size: 0.875rem;">
+                                <span>📅 ${video.date}</span>
+                                <span>👁 ${video.views}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Play video
+        function playVideo(index) {
+            const videosJson = localStorage.getItem('recordedVideosList');
+            const videos = videosJson ? JSON.parse(videosJson) : [];
+            const video = videos[index];
+            
+            if (!video || !video.embedLink) {
+                alert('Video embed code not found!');
+                return;
+            }
+            
+            const container = document.getElementById('videosGridContainer');
+            const playerContainer = document.getElementById('videoPlayerContainer');
+            const videoWrapper = document.getElementById('recordedVideoWrapper');
+            
+            // Hide grid, show player
+            container.style.display = 'none';
+            playerContainer.style.display = 'block';
+            
+            // Clear previous content
+            videoWrapper.innerHTML = '';
+            
+            // Create a temporary div to parse the embed code
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = video.embedLink.trim();
+            
+            // Move all nodes from tempDiv to videoWrapper
+            while (tempDiv.firstChild) {
+                const node = tempDiv.firstChild;
+                videoWrapper.appendChild(node);
+            }
+            
+            // Execute any scripts in the embed code
+            const scripts = videoWrapper.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                // Copy all attributes
+                Array.from(oldScript.attributes).forEach(attr => {
+                    newScript.setAttribute(attr.name, attr.value);
+                });
+                // Copy src or content
+                if (oldScript.src) {
+                    newScript.src = oldScript.src;
+                } else {
+                    newScript.textContent = oldScript.textContent;
+                }
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+            
+            // Ensure iframes are properly loaded
+            const iframes = videoWrapper.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                // Force reload iframe
+                const src = iframe.src;
+                iframe.src = '';
+                setTimeout(() => {
+                    iframe.src = src;
+                }, 100);
+            });
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Back to videos list
+        function backToVideosList() {
+            const container = document.getElementById('videosGridContainer');
+            const playerContainer = document.getElementById('videoPlayerContainer');
+            const videoWrapper = document.getElementById('recordedVideoWrapper');
+            
+            container.style.display = 'block';
+            playerContainer.style.display = 'none';
+            videoWrapper.innerHTML = '';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Load videos on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideos();
+        });
+    </script>
+    <style>
+        .video-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(255, 68, 68, 0.3);
+        }
+        
+        .video-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .video-wrapper iframe,
+        .video-wrapper embed,
+        .video-wrapper object,
+        .video-wrapper video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .back-to-videos-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .back-to-videos-btn:hover {
+            background: #ff6666 !important;
+            transform: translateX(-4px);
+        }
+        
+        @media (max-width: 768px) {
+            .videos-grid-container > div {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .video-container {
+                padding: 0 0.5rem;
+            }
+        }
+    </style>
+</body>
+</html>
+
+

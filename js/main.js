@@ -6,6 +6,122 @@
 (function() {
     'use strict';
 
+    // Global error handler to suppress XML parsing errors from third-party scripts (e.g., qcloud video player)
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    const originalConsoleLog = console.log;
+    
+    const suppressedErrorPatterns = [
+        'XML Parsing Error',
+        'datacenter.live.qcloud.com',
+        'not well-formed',
+        'qcloud.com',
+        'tcplayer',
+        'mozPressure',
+        'mozInputSource',
+        'VideoJS',
+        'downloadable font',
+        'rejected by sanitizer',
+        'yololiv.com',
+        'static.yololiv.com',
+        'font-family',
+        'no supported format found',
+        'hls.min',
+        'source map error',
+        'scroll anchoring',
+        'request failed with status'
+    ];
+    
+    // Check if message should be suppressed
+    function shouldSuppressMessage(message) {
+        if (!message || typeof message !== 'string') {
+            message = String(message);
+        }
+        const msgLower = message.toLowerCase();
+        return suppressedErrorPatterns.some(pattern => 
+            msgLower.includes(pattern.toLowerCase())
+        );
+    }
+    
+    // Suppress console errors from third-party scripts
+    console.error = function(...args) {
+        const errorMessage = args.map(arg => String(arg)).join(' ');
+        // Only suppress known third-party errors, keep real errors visible
+        if (!shouldSuppressMessage(errorMessage)) {
+            originalConsoleError.apply(console, args);
+        }
+    };
+    
+    // Also suppress warnings that might contain XML parsing errors
+    console.warn = function(...args) {
+        const warningMessage = args.map(arg => String(arg)).join(' ');
+        if (shouldSuppressMessage(warningMessage)) {
+            return; // Suppress these warnings
+        }
+        originalConsoleWarn.apply(console, args);
+    };
+    
+    // Suppress console logs from third-party scripts
+    console.log = function(...args) {
+        const logMessage = args.map(arg => String(arg)).join(' ');
+        // Suppress numeric logs from YoloLiv (like "3 0.003...")
+        if (shouldSuppressMessage(logMessage) || /^[\d\s.]+$/.test(logMessage.trim())) {
+            return; // Suppress these logs
+        }
+        originalConsoleLog.apply(console, args);
+    };
+    
+    // Suppress XML parsing errors via window error handler (multiple handlers for different error types)
+    const errorHandler = function(event) {
+        const errorMessage = (event.message || event.error?.message || '').toString();
+        const errorSource = (event.filename || event.source || '').toString();
+        
+        if (shouldSuppressMessage(errorMessage) || shouldSuppressMessage(errorSource)) {
+            event.preventDefault();
+            event.stopPropagation();
+            return true; // Prevent default error handling
+        }
+        return false;
+    };
+    
+    // Add error listeners at multiple phases
+    window.addEventListener('error', errorHandler, true); // Capture phase
+    window.addEventListener('error', errorHandler, false); // Bubble phase
+    
+    // Handle unhandled promise rejections that might contain XML parsing errors
+    window.addEventListener('unhandledrejection', function(event) {
+        const reason = (event.reason || '').toString();
+        if (shouldSuppressMessage(reason)) {
+            event.preventDefault();
+            return true;
+        }
+    });
+    
+    // Intercept XMLHttpRequest errors (some XML parsing errors come from XHR)
+    const originalXHROpen = XMLHttpRequest.prototype.open;
+    const originalXHRSend = XMLHttpRequest.prototype.send;
+    
+    XMLHttpRequest.prototype.open = function(...args) {
+        this._url = args[1];
+        return originalXHROpen.apply(this, args);
+    };
+    
+    XMLHttpRequest.prototype.send = function(...args) {
+        const xhr = this;
+        const originalOnerror = xhr.onerror;
+        
+        xhr.onerror = function(event) {
+            const url = (xhr._url || '').toString();
+            if (!shouldSuppressMessage(url)) {
+                if (originalOnerror) {
+                    originalOnerror.apply(this, arguments);
+                }
+            }
+        };
+        
+        return originalXHRSend.apply(this, args);
+    };
+
     // Configuration
     const CONFIG = {
         // Stream check interval (in milliseconds)
@@ -61,6 +177,80 @@
      * Initialize the application
      */
     function init() {
+        // FIRST: Immediately hide offline state if thumbnail exists in settings
+        // This prevents the offline state from flashing before settings are loaded
+        const settings = loadSettings();
+        if (settings && settings.thumbnail) {
+            const offlineState = document.getElementById('offlineState');
+            if (offlineState) {
+                offlineState.classList.remove('active');
+                offlineState.style.display = 'none';
+                offlineState.style.visibility = 'hidden';
+                offlineState.style.opacity = '0';
+                offlineState.style.zIndex = '1';
+            }
+        }
+        
+        // Load and apply saved settings (especially thumbnail)
+        loadAndApplySettings();
+        
+        // Continuously ensure offline state stays hidden if thumbnail exists
+        setInterval(function() {
+            const currentSettings = loadSettings();
+            const videoWrapper = document.getElementById('videoWrapper');
+            const thumbnail = videoWrapper ? videoWrapper.querySelector('.live-video-thumbnail') : null;
+            
+            if ((currentSettings && currentSettings.thumbnail) || (thumbnail && thumbnail.offsetParent !== null)) {
+                const offlineState = document.getElementById('offlineState');
+                if (offlineState) {
+                    offlineState.classList.remove('active');
+                    offlineState.style.display = 'none';
+                    offlineState.style.visibility = 'hidden';
+                    offlineState.style.opacity = '0';
+                    offlineState.style.zIndex = '1';
+                }
+            }
+        }, 500); // Check every 500ms
+        
+        // Immediately check for thumbnail and hide offline state if present
+        setTimeout(function() {
+            const settings = loadSettings();
+            if (settings && settings.thumbnail) {
+                const videoWrapper = document.getElementById('videoWrapper');
+                if (videoWrapper) {
+                    const thumbnail = videoWrapper.querySelector('.live-video-thumbnail');
+                    if (!thumbnail) {
+                        // Thumbnail should exist but doesn't, reapply it
+                        applyThumbnail(settings.thumbnail);
+                    }
+                    // Force hide offline state
+                    const offlineState = document.getElementById('offlineState');
+                    if (offlineState) {
+                        offlineState.classList.remove('active');
+                        offlineState.style.display = 'none';
+                        offlineState.style.visibility = 'hidden';
+                        offlineState.style.opacity = '0';
+                        offlineState.style.zIndex = '1';
+                    }
+                }
+            }
+        }, 100);
+        
+        // Also check after a longer delay to ensure thumbnail is visible
+        setTimeout(function() {
+            forceApplyThumbnailIfExists();
+        }, 1000);
+        
+        // Check again after 2 seconds
+        setTimeout(function() {
+            forceApplyThumbnailIfExists();
+        }, 2000);
+        
+        // Check one more time after 3 seconds
+        setTimeout(function() {
+            forceApplyThumbnailIfExists();
+        }, 3000);
+        
         // Set up the live stream iframe
         setupLiveStream();
         
@@ -100,7 +290,7 @@
      */
     function setupLiveStream() {
         if (!elements.liveStream) {
-            console.error('Live stream container not found');
+            // Live stream container not found - this is normal on pages without live stream
             return;
         }
 
@@ -135,14 +325,34 @@
      */
     function handleStreamError() {
         console.warn('Error loading live stream');
-        streamState.isLive = false;
-        updateUIState();
+        // Check if thumbnail exists - if so, don't mark as offline
+        const videoWrapper = document.getElementById('videoWrapper');
+        const hasThumbnail = videoWrapper && videoWrapper.querySelector('.live-video-thumbnail');
+        
+        if (!hasThumbnail) {
+            streamState.isLive = false;
+            updateUIState();
+        }
     }
 
     /**
      * Update UI based on stream state
      */
     function updateUIState() {
+        // Check if thumbnail exists - if so, don't show offline state
+        const videoWrapper = document.getElementById('videoWrapper');
+        if (videoWrapper) {
+            const thumbnail = videoWrapper.querySelector('.live-video-thumbnail');
+            if (thumbnail && thumbnail.style.display !== 'none' && thumbnail.offsetParent !== null) {
+                // Thumbnail is present and visible, don't show offline state
+                if (elements.offlineState) {
+                    elements.offlineState.classList.remove('active');
+                    elements.offlineState.style.display = 'none';
+                }
+                return;
+            }
+        }
+        
         if (streamState.isLive) {
             showLiveState();
         } else {
@@ -166,6 +376,27 @@
      * Show offline state (display offline message)
      */
     function showOfflineState() {
+        // ALWAYS check if thumbnail exists first - if so, NEVER show offline state
+        const videoWrapper = document.getElementById('videoWrapper');
+        if (videoWrapper) {
+            const thumbnail = videoWrapper.querySelector('.live-video-thumbnail');
+            const settings = loadSettings();
+            
+            // If thumbnail exists in DOM OR in settings, don't show offline state
+            if ((thumbnail && thumbnail.offsetParent !== null) || (settings && settings.thumbnail)) {
+                // Thumbnail is present, force hide offline state
+                if (elements.offlineState) {
+                    elements.offlineState.classList.remove('active');
+                    elements.offlineState.style.display = 'none';
+                    elements.offlineState.style.visibility = 'hidden';
+                    elements.offlineState.style.opacity = '0';
+                    elements.offlineState.style.zIndex = '1';
+                }
+                return; // Exit early, don't show offline state
+            }
+        }
+        
+        // Only show offline state if no thumbnail exists
         if (elements.offlineState) {
             elements.offlineState.classList.add('active');
         }
@@ -219,10 +450,19 @@
         setupAboutLinkScroll();
         
         // Set up contact section
-        setupContactSection();
+        if (typeof setupContactSection === 'function') {
+            setupContactSection();
+        }
         
-        // Set up smooth scroll for contact section
-        setupContactLinkScroll();
+        // Set up smooth scroll for contact section (if function exists)
+        // This is optional and may not exist on all pages
+        try {
+            if (typeof setupContactLinkScroll === 'function') {
+                setupContactLinkScroll();
+            }
+        } catch (e) {
+            // Function doesn't exist, which is fine
+        }
     }
     
     /**
@@ -238,7 +478,14 @@
         }
         
         streamState.errorCount = 0;
-        streamState.isLive = false;
+        
+        // Check if thumbnail exists - if so, keep as live
+        const videoWrapper = document.getElementById('videoWrapper');
+        const hasThumbnail = videoWrapper && videoWrapper.querySelector('.live-video-thumbnail');
+        
+        if (!hasThumbnail) {
+            streamState.isLive = false;
+        }
         
         // Reload iframe
         if (elements.liveStream) {
@@ -313,8 +560,14 @@
      */
     function handleOffline() {
         console.log('Network connection lost');
-        streamState.isLive = false;
-        updateUIState();
+        // Check if thumbnail exists - if so, don't show offline state
+        const videoWrapper = document.getElementById('videoWrapper');
+        const hasThumbnail = videoWrapper && videoWrapper.querySelector('.live-video-thumbnail');
+        
+        if (!hasThumbnail) {
+            streamState.isLive = false;
+            updateUIState();
+        }
     }
 
     /**
@@ -368,9 +621,20 @@
                     // In production, you would check stream API here
                     checkStreamViaAPI();
                 } else {
-                    streamState.isLive = false;
-                    updateUIState();
-                    updateStreamStatusDisplay();
+                    // Check if thumbnail exists before marking as offline
+                    const videoWrapper = document.getElementById('videoWrapper');
+                    const hasThumbnail = videoWrapper && videoWrapper.querySelector('.live-video-thumbnail');
+                    
+                    if (!hasThumbnail) {
+                        streamState.isLive = false;
+                        updateUIState();
+                        updateStreamStatusDisplay();
+                    } else {
+                        // Thumbnail exists, keep stream as live to prevent offline message
+                        streamState.isLive = true;
+                        updateUIState();
+                        updateStreamStatusDisplay();
+                    }
                 }
             } catch (e) {
                 // CORS error is expected, but iframe exists
@@ -388,6 +652,10 @@
      * Check stream status via API (placeholder for stream API)
      */
     function checkStreamViaAPI() {
+        // Check if thumbnail exists - if so, don't mark as offline
+        const videoWrapper = document.getElementById('videoWrapper');
+        const hasThumbnail = videoWrapper && videoWrapper.querySelector('.live-video-thumbnail');
+        
         // TODO: Implement actual stream API call
         // Example:
         // fetch('STREAM_API_ENDPOINT')
@@ -403,10 +671,16 @@
         //         logStreamError('API Check Failed', error.message);
         //     });
         
-        // For now, assume stream is live if no errors
-        if (streamState.errorCount < 3) {
+        // For now, assume stream is live if no errors OR if thumbnail exists
+        if (streamState.errorCount < 3 || hasThumbnail) {
             streamState.isLive = true;
+        } else {
+            streamState.isLive = false;
         }
+        
+        // Update UI but respect thumbnail
+        updateUIState();
+        updateStreamStatusDisplay();
     }
     
     /**
@@ -590,7 +864,12 @@
      */
     function setupRecordedVideos() {
         if (!elements.recordedVideos) {
-            console.log('Recorded videos container not found');
+            // Only log if we're on a page that should have recorded videos
+            const isVideoPage = window.location.pathname.includes('video.html') || 
+                                document.getElementById('recordedVideoWrapper');
+            if (isVideoPage) {
+                console.log('Recorded videos container not found');
+            }
             return;
         }
 
@@ -1724,12 +2003,12 @@ END:VCALENDAR`;
      * Set up accessibility features
      */
     function setupAccessibility() {
-        // Skip to main content link (for screen readers)
-        const skipLink = document.createElement('a');
-        skipLink.href = '#main-content';
-        skipLink.className = 'skip-link';
-        skipLink.textContent = 'Skip to main content';
-        document.body.insertBefore(skipLink, document.body.firstChild);
+        // Skip to main content link removed per user request
+        // const skipLink = document.createElement('a');
+        // skipLink.href = '#main-content';
+        // skipLink.className = 'skip-link';
+        // skipLink.textContent = 'Skip to main content';
+        // document.body.insertBefore(skipLink, document.body.firstChild);
         
         // Add ARIA labels where needed
         const mainContent = document.querySelector('main');
@@ -1845,6 +2124,12 @@ END:VCALENDAR`;
      * Register service worker for offline support
      */
     function registerServiceWorker() {
+        // Service Workers only work with http:// or https:// protocols, not file://
+        if (window.location.protocol === 'file:') {
+            console.log('ServiceWorker registration skipped: file:// protocol not supported');
+            return;
+        }
+        
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js')
@@ -1852,7 +2137,10 @@ END:VCALENDAR`;
                         console.log('ServiceWorker registration successful:', registration.scope);
                     })
                     .catch(function(error) {
-                        console.log('ServiceWorker registration failed:', error);
+                        // Only log error if it's not a protocol issue
+                        if (!error.message.includes('scheme') && !error.message.includes('protocol')) {
+                            console.log('ServiceWorker registration failed:', error);
+                        }
                     });
             });
         }
@@ -2221,6 +2509,516 @@ END:VCALENDAR`;
     }
 
     /**
+     * Apply live stream embed code
+     */
+    function applyLiveStreamEmbed(code) {
+        const videoWrapper = document.getElementById('videoWrapper');
+        if (!videoWrapper) {
+            console.error('videoWrapper not found!');
+            return;
+        }
+        
+        // Remove existing embed containers
+        const existingContainers = videoWrapper.querySelectorAll('div[style*="position: absolute"], .live-stream-embed-container');
+        existingContainers.forEach(container => {
+            // Only remove if it contains iframe or embed code
+            if (container.querySelector('iframe, script, div[id*="yololiv"]')) {
+                container.remove();
+            }
+        });
+        
+        // Remove existing iframes and scripts directly (but not thumbnail)
+        const existingEmbeds = videoWrapper.querySelectorAll('iframe, script, div[id*="yololiv"]');
+        existingEmbeds.forEach(embed => {
+            // Don't remove the thumbnail
+            if (!embed.closest('.live-video-thumbnail')) {
+                embed.remove();
+            }
+        });
+        
+        // Hide offline state
+        const offlineState = document.getElementById('offlineState');
+        if (offlineState) {
+            offlineState.classList.remove('active');
+            offlineState.style.display = 'none';
+            offlineState.style.visibility = 'hidden';
+        }
+        
+        // Modify embed code to optimize buffering and hide chat/comments if it's YoloLiv
+        let modifiedCode = code;
+        
+        // For YoloLiv iframes, add parameters to optimize streaming and hide chat
+        if (code.includes('yololiv.com') || code.includes('yolo.live')) {
+            // Parse the iframe src and add optimization parameters
+            modifiedCode = code.replace(
+                /src="([^"]*yololiv[^"]*?)"/gi,
+                (match, url) => {
+                    const separator = url.includes('?') ? '&' : '?';
+                    // Add parameters for:
+                    // - Hide chat/comments
+                    // - Low latency mode
+                    // - Auto quality adjustment
+                    // - Reduced buffer
+                    // - Auto play
+                    const params = [
+                        'hideChat=1',
+                        'hideComments=1',
+                        'chat=0',
+                        'lowLatency=1',
+                        'autoQuality=1',
+                        'buffer=low',
+                        'preload=auto',
+                        'autoplay=1',
+                        'muted=0',
+                        'quality=auto'
+                    ].join('&');
+                    return `src="${url}${separator}${params}"`;
+                }
+            );
+            
+            // Also try to add attributes to iframe for better performance
+            if (!modifiedCode.includes('style=')) {
+                modifiedCode = modifiedCode.replace(
+                    /<iframe/gi,
+                    '<iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"'
+                );
+            }
+            
+            // Add allow attribute for autoplay
+            if (!modifiedCode.includes('allow=')) {
+                modifiedCode = modifiedCode.replace(
+                    /<iframe/gi,
+                    '<iframe allow="autoplay; fullscreen; picture-in-picture"'
+                );
+            }
+            
+            // Add loading="eager" for immediate loading
+            if (!modifiedCode.includes('loading=')) {
+                modifiedCode = modifiedCode.replace(
+                    /<iframe/gi,
+                    '<iframe loading="eager"'
+                );
+            }
+        }
+        
+        // Create container for embed
+        const embedContainer = document.createElement('div');
+        embedContainer.className = 'live-stream-embed-container';
+        embedContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;';
+        
+        // Insert the embed code
+        embedContainer.innerHTML = modifiedCode;
+        videoWrapper.insertBefore(embedContainer, videoWrapper.firstChild);
+        
+        // Execute any scripts in the embed code
+        const scripts = embedContainer.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => {
+                newScript.setAttribute(attr.name, attr.value);
+            });
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+        
+        // After iframe loads, try to inject CSS to hide comments
+        setTimeout(() => {
+            const iframes = embedContainer.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                try {
+                    // Try to add CSS to hide chat (may fail due to CORS)
+                    iframe.style.width = '100%';
+                    iframe.style.maxWidth = '100%';
+                } catch (e) {
+                    // CORS will prevent this, but worth trying
+                }
+            });
+        }, 1000);
+        
+        console.log('Live stream embed applied successfully');
+    }
+
+    /**
+     * Apply recorded videos embed code
+     */
+    function applyRecordedVideosEmbed(code) {
+        const recordedVideoWrapper = document.getElementById('recordedVideoWrapper');
+        if (!recordedVideoWrapper) {
+            console.error('recordedVideoWrapper not found!');
+            return;
+        }
+        
+        // Remove existing embed containers
+        const existingContainers = recordedVideoWrapper.querySelectorAll('div[class*="embed"], div[style*="width: 100%"]');
+        existingContainers.forEach(container => {
+            if (container.querySelector('iframe, script, div[id*="yololiv"]')) {
+                container.remove();
+            }
+        });
+        
+        // Remove existing iframes and scripts directly
+        const existingEmbeds = recordedVideoWrapper.querySelectorAll('iframe, script, div[id*="yololiv"]');
+        existingEmbeds.forEach(embed => embed.remove());
+        
+        // Hide offline state for recorded videos
+        const recordedOfflineState = document.getElementById('recordedOfflineState');
+        if (recordedOfflineState) {
+            recordedOfflineState.classList.remove('active');
+            recordedOfflineState.style.display = 'none';
+        }
+        
+        // Create container for embed
+        const embedContainer = document.createElement('div');
+        embedContainer.className = 'recorded-videos-embed-container';
+        embedContainer.style.cssText = 'width: 100%; min-height: 600px;';
+        
+        // Insert the embed code
+        embedContainer.innerHTML = code;
+        recordedVideoWrapper.insertBefore(embedContainer, recordedVideoWrapper.firstChild);
+        
+        // Execute any scripts in the embed code
+        const scripts = embedContainer.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => {
+                newScript.setAttribute(attr.name, attr.value);
+            });
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+    }
+
+    /**
+     * Apply thumbnail to live video
+     */
+    function applyThumbnail(thumbnailData) {
+        const videoWrapper = document.getElementById('videoWrapper');
+        if (!videoWrapper) return;
+        
+        // Remove existing thumbnail
+        const existingThumbnail = videoWrapper.querySelector('.live-video-thumbnail');
+        if (existingThumbnail) {
+            existingThumbnail.remove();
+        }
+        
+        // Hide offline state when thumbnail is present (do this first)
+        const offlineState = videoWrapper.querySelector('.offline-state');
+        if (offlineState) {
+            offlineState.style.display = 'none';
+            offlineState.classList.remove('active');
+            offlineState.style.visibility = 'hidden';
+            offlineState.style.zIndex = '1';
+        }
+        
+        // Also hide loading indicator
+        const loadingIndicator = videoWrapper.querySelector('.stream-loading');
+        if (loadingIndicator) {
+            loadingIndicator.classList.remove('active');
+            loadingIndicator.style.display = 'none';
+        }
+        
+        // Create thumbnail overlay with all important styles
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'live-video-thumbnail';
+        thumbnail.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; z-index: 15 !important; background-size: cover !important; background-position: center !important; background-image: url(' + thumbnailData + ') !important; cursor: pointer !important; display: block !important; visibility: visible !important; opacity: 1 !important; background-color: var(--bg-secondary, #1a1a1a) !important;';
+        
+        // Add LIVE badge
+        const liveBadge = document.createElement('div');
+        liveBadge.className = 'live-badge-thumbnail';
+        liveBadge.innerHTML = '● LIVE';
+        liveBadge.style.cssText = 'position: absolute; top: 20px; left: 20px; background: rgba(255, 0, 0, 0.9); color: white; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; z-index: 17 !important; animation: pulse 2s infinite; letter-spacing: 1px;';
+        thumbnail.appendChild(liveBadge);
+        
+        // Add play button overlay
+        const playOverlay = document.createElement('div');
+        playOverlay.className = 'thumbnail-play-overlay';
+        playOverlay.innerHTML = '<div class="thumbnail-play-button">▶</div>';
+        playOverlay.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 16 !important; width: 80px; height: 80px; background-color: rgba(255, 68, 68, 0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease;';
+        
+        const playButton = playOverlay.querySelector('.thumbnail-play-button');
+        playButton.style.cssText = 'font-size: 2rem; color: white; padding-left: 4px;';
+        
+        playOverlay.addEventListener('mouseenter', function() {
+            this.style.transform = 'translate(-50%, -50%) scale(1.1)';
+            this.style.backgroundColor = 'rgba(255, 68, 68, 1)';
+        });
+        
+        playOverlay.addEventListener('mouseleave', function() {
+            this.style.transform = 'translate(-50%, -50%) scale(1)';
+            this.style.backgroundColor = 'rgba(255, 68, 68, 0.9)';
+        });
+        
+        thumbnail.appendChild(playOverlay);
+        
+        // Append thumbnail at the end so it appears on top of everything
+        videoWrapper.appendChild(thumbnail);
+        
+        // Continuously ensure offline state stays hidden when thumbnail exists
+        const keepOfflineHidden = setInterval(function() {
+            const offlineState = videoWrapper.querySelector('.offline-state');
+            if (offlineState && thumbnail.offsetParent !== null) {
+                offlineState.style.display = 'none';
+                offlineState.classList.remove('active');
+            }
+        }, 500);
+        
+        // Store interval ID on thumbnail for cleanup
+        thumbnail.dataset.intervalId = keepOfflineHidden;
+        
+        // Hide thumbnail when video starts playing (if embed code is present and actually playing)
+        // Only hide if video is actively playing, not just if embed exists
+        const checkForVideo = setInterval(function() {
+            const embed = videoWrapper.querySelector('iframe, video, [id*="yololiv"]');
+            
+            if (embed && thumbnail.offsetParent !== null) {
+                // For video elements, check if playing
+                if (embed.tagName === 'VIDEO') {
+                    if (!embed.paused && !embed.ended && embed.currentTime > 0) {
+                        // Video is playing, hide thumbnail
+                        thumbnail.style.opacity = '0';
+                        thumbnail.style.transition = 'opacity 0.5s ease';
+                        thumbnail.style.pointerEvents = 'none';
+                        setTimeout(() => {
+                            if (thumbnail.parentNode) {
+                                thumbnail.remove();
+                            }
+                        }, 500);
+                        clearInterval(checkForVideo);
+                    }
+                }
+                
+                // For iframes, we can't easily detect playback
+                // but we can hide thumbnail after a reasonable time if user hasn't clicked
+                // This is handled by user click event instead
+            }
+        }, 2000);
+        
+        // Clear intervals when thumbnail is removed
+        thumbnail.addEventListener('remove', function() {
+            clearInterval(keepOfflineHidden);
+            clearInterval(checkForVideo);
+        });
+        
+        // Also hide thumbnail on click (user wants to play)
+        thumbnail.addEventListener('click', function() {
+            // Clear the interval that keeps offline state hidden
+            const intervalId = this.dataset.intervalId;
+            if (intervalId) {
+                clearInterval(parseInt(intervalId));
+            }
+            
+            // Fade out and remove thumbnail
+            this.style.opacity = '0';
+            this.style.transition = 'opacity 0.3s ease';
+            this.style.pointerEvents = 'none';
+            
+            setTimeout(() => {
+                this.remove();
+            }, 300);
+            
+            // Try to auto-play the video if there's an iframe
+            setTimeout(() => {
+                const videoWrapper = document.getElementById('videoWrapper');
+                if (videoWrapper) {
+                    const iframe = videoWrapper.querySelector('iframe');
+                    const video = videoWrapper.querySelector('video');
+                    
+                    // If there's a video element, try to play it
+                    if (video && typeof video.play === 'function') {
+                        video.play().catch(err => {
+                            console.log('Video autoplay prevented:', err);
+                        });
+                    }
+                    
+                    // If there's an iframe, try to send play command
+                    if (iframe) {
+                        try {
+                            // Try to focus the iframe to enable interactions
+                            iframe.focus();
+                            
+                            // For some video players, clicking on them helps
+                            iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                        } catch (e) {
+                            // Cross-origin restrictions may prevent this
+                            console.log('Cannot control iframe:', e);
+                        }
+                    }
+                }
+            }, 100);
+        });
+        
+        // Force hide offline state immediately and keep it hidden
+        setTimeout(function() {
+            const offlineState = videoWrapper.querySelector('.offline-state');
+            if (offlineState) {
+                offlineState.style.display = 'none';
+                offlineState.classList.remove('active');
+                offlineState.style.visibility = 'hidden';
+            }
+        }, 50);
+    }
+
+    /**
+     * Remove thumbnail from live video
+     */
+    function removeThumbnail() {
+        const videoWrapper = document.getElementById('videoWrapper');
+        if (!videoWrapper) return;
+        
+        const thumbnail = videoWrapper.querySelector('.live-video-thumbnail');
+        if (thumbnail) {
+            thumbnail.style.opacity = '0';
+            thumbnail.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                thumbnail.remove();
+            }, 500);
+        }
+    }
+
+    /**
+     * Load and apply saved settings
+     */
+    function loadAndApplySettings() {
+        const settingsData = localStorage.getItem('websiteSettings');
+        if (!settingsData) {
+            return;
+        }
+        
+        try {
+            const settings = JSON.parse(settingsData);
+            
+            // Wait for DOM to be ready
+            const applySettings = function() {
+                // Apply live stream embed first (so thumbnail can be on top)
+                if (settings.liveStreamEmbed) {
+                    applyLiveStreamEmbed(settings.liveStreamEmbed);
+                }
+                
+                // Apply recorded videos embed
+                if (settings.recordedVideosEmbed) {
+                    applyRecordedVideosEmbed(settings.recordedVideosEmbed);
+                }
+                
+                // Apply thumbnail after embed (so it appears on top with higher z-index)
+                if (settings.thumbnail) {
+                    
+                    // Hide offline state immediately
+                    const offlineState = document.getElementById('offlineState');
+                    if (offlineState) {
+                        offlineState.classList.remove('active');
+                        offlineState.style.display = 'none';
+                        offlineState.style.visibility = 'hidden';
+                        offlineState.style.opacity = '0';
+                    }
+                    
+                    // Apply thumbnail immediately
+                    applyThumbnail(settings.thumbnail);
+                    
+                    // Reapply after delays to ensure it's visible
+                    setTimeout(function() {
+                        applyThumbnail(settings.thumbnail);
+                        const offlineState2 = document.getElementById('offlineState');
+                        if (offlineState2) {
+                            offlineState2.classList.remove('active');
+                            offlineState2.style.display = 'none';
+                            offlineState2.style.visibility = 'hidden';
+                            offlineState2.style.opacity = '0';
+                        }
+                    }, 100);
+                    
+                    setTimeout(function() {
+                        applyThumbnail(settings.thumbnail);
+                        const offlineState3 = document.getElementById('offlineState');
+                        if (offlineState3) {
+                            offlineState3.classList.remove('active');
+                            offlineState3.style.display = 'none';
+                            offlineState3.style.visibility = 'hidden';
+                            offlineState3.style.opacity = '0';
+                        }
+                    }, 500);
+                    
+                    setTimeout(function() {
+                        applyThumbnail(settings.thumbnail);
+                        const offlineState4 = document.getElementById('offlineState');
+                        if (offlineState4) {
+                            offlineState4.classList.remove('active');
+                            offlineState4.style.display = 'none';
+                            offlineState4.style.visibility = 'hidden';
+                            offlineState4.style.opacity = '0';
+                        }
+                    }, 1000);
+                }
+            };
+            
+            // Apply immediately if DOM is ready, otherwise wait
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', applySettings);
+            } else {
+                // DOM is ready, but wait a bit for all elements to be available
+                setTimeout(applySettings, 100);
+            }
+        } catch (e) {
+            console.error('Error loading settings:', e);
+        }
+    }
+    
+    /**
+     * Load settings (helper function)
+     */
+    function loadSettings() {
+        const settingsData = localStorage.getItem('websiteSettings');
+        let settings = {};
+        
+        if (settingsData) {
+            try {
+                settings = JSON.parse(settingsData);
+            } catch (e) {
+                settings = {};
+            }
+        }
+        
+        // Migrate old format data to new format (backward compatibility)
+        if (!settings.thumbnail) {
+            const oldThumbnail = localStorage.getItem('liveThumbnail');
+            if (oldThumbnail) {
+                settings.thumbnail = oldThumbnail;
+                localStorage.setItem('websiteSettings', JSON.stringify(settings));
+            }
+        }
+        
+        if (!settings.liveStreamEmbed) {
+            const oldEmbed = localStorage.getItem('liveStreamEmbed');
+            if (oldEmbed) {
+                settings.liveStreamEmbed = oldEmbed;
+                localStorage.setItem('websiteSettings', JSON.stringify(settings));
+            }
+        }
+        
+        return settings;
+    }
+
+    /**
+     * Force apply thumbnail if it exists in settings
+     */
+    function forceApplyThumbnailIfExists() {
+        const settings = loadSettings();
+        if (settings && settings.thumbnail) {
+            const videoWrapper = document.getElementById('videoWrapper');
+            if (videoWrapper) {
+                applyThumbnail(settings.thumbnail);
+                // Force hide offline state
+                const offlineState = document.getElementById('offlineState');
+                if (offlineState) {
+                    offlineState.style.display = 'none';
+                    offlineState.classList.remove('active');
+                    offlineState.style.visibility = 'hidden';
+                    offlineState.style.opacity = '0';
+                }
+            }
+        }
+    }
+    
+    /**
      * Public API for external control (if needed)
      */
     window.RajCreationLive = {
@@ -2229,7 +3027,13 @@ END:VCALENDAR`;
         showLive: showLiveState,
         getState: () => ({ ...streamState }),
         toggleFullscreen: toggleFullscreen,
-        togglePictureInPicture: togglePictureInPicture
+        togglePictureInPicture: togglePictureInPicture,
+        applyLiveStreamEmbed: applyLiveStreamEmbed,
+        applyRecordedVideosEmbed: applyRecordedVideosEmbed,
+        applyThumbnail: applyThumbnail,
+        removeThumbnail: removeThumbnail,
+        loadSettings: loadSettings,
+        forceApplyThumbnail: forceApplyThumbnailIfExists
     };
 
     // Initialize when DOM is ready

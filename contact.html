@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RajCreation Live - Contact Us">
+    <meta name="keywords" content="RajCreation, contact, support">
+    <meta name="author" content="RajCreation">
+    <meta name="robots" content="index, follow">
+    
+    <title>Contact Us - RajCreation Live</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+    
+    <!-- Early error suppression for third-party scripts -->
+    <script>
+    (function() {
+        'use strict';
+        const suppressPatterns = [
+            'XML Parsing Error', 'datacenter.live.qcloud.com', 'not well-formed', 'qcloud.com',
+            'tcplayer', 'mozPressure', 'mozInputSource', 'VideoJS', 'downloadable font',
+            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com'
+        ];
+        function shouldSuppress(msg) {
+            const msgStr = String(msg).toLowerCase();
+            return suppressPatterns.some(p => msgStr.includes(p.toLowerCase()));
+        }
+        const origError = console.error;
+        console.error = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origError.apply(console, args);
+        };
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origWarn.apply(console, args);
+        };
+        const origLog = console.log;
+        console.log = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origLog.apply(console, args);
+        };
+        window.addEventListener('error', function(e) {
+            const msg = (e.message || '') + ' ' + (e.filename || '');
+            if (shouldSuppress(msg)) { e.preventDefault(); e.stopPropagation(); return true; }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+            if (shouldSuppress(String(e.reason || ''))) { e.preventDefault(); return true; }
+        });
+    })();
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="site-title">RajCreation Live</h1>
+                
+                <!-- Header Controls -->
+                <div class="header-controls">
+                    <button class="header-control-btn search-btn" id="searchBtn" aria-label="Search" title="Search">
+                        <span>🔍</span>
+                    </button>
+                    
+                    <button class="header-control-btn theme-switcher" id="themeSwitcher" aria-label="Toggle theme" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    
+                </div>
+                <nav class="header-nav">
+                    <ul class="header-nav-menu" id="navMenu">
+                        <li><a href="index.html" class="header-nav-link">Home</a></li>
+                        <li><a href="video.html" class="header-nav-link">Video</a></li>
+                        <li><a href="photo.html" class="header-nav-link">Photo</a></li>
+                        <li><a href="about.html" class="header-nav-link">About</a></li>
+                        <li><a href="schedule.html" class="header-nav-link">Schedule</a></li>
+                        <li><a href="contact.html" class="header-nav-link active">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="live-indicator" id="liveIndicator">
+                    <span class="live-dot"></span>
+                    <span class="live-text">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb-list" id="breadcrumbList">
+                <li><a href="index.html">Home</a></li>
+                <li>Contact</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Contact Section -->
+            <section class="contact-section">
+                <div class="page-header">
+                    <h2 class="page-title">Contact Us</h2>
+                    <p class="page-description">Get in touch with us. We'd love to hear from you!</p>
+                </div>
+
+                <div class="contact-container">
+                    <!-- Contact Form -->
+                    <div class="contact-form-container">
+                        <h3 class="contact-form-title">Send us a Message</h3>
+                        <form class="contact-form" id="contactForm">
+                            <div class="form-group">
+                                <label for="contactName" class="form-label">Name <span class="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="contactName" 
+                                    name="name" 
+                                    class="form-input" 
+                                    placeholder="Your name"
+                                    required
+                                    aria-required="true">
+                                <span class="form-error" id="nameError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactEmail" class="form-label">Email <span class="required">*</span></label>
+                                <input 
+                                    type="email" 
+                                    id="contactEmail" 
+                                    name="email" 
+                                    class="form-input" 
+                                    placeholder="your.email@example.com"
+                                    required
+                                    aria-required="true">
+                                <span class="form-error" id="emailError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactSubject" class="form-label">Subject <span class="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="contactSubject" 
+                                    name="subject" 
+                                    class="form-input" 
+                                    placeholder="Message subject"
+                                    required
+                                    aria-required="true">
+                                <span class="form-error" id="subjectError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactMessage" class="form-label">Message <span class="required">*</span></label>
+                                <textarea 
+                                    id="contactMessage" 
+                                    name="message" 
+                                    class="form-textarea" 
+                                    rows="6" 
+                                    placeholder="Your message here..."
+                                    required
+                                    aria-required="true"></textarea>
+                                <span class="form-error" id="messageError"></span>
+                            </div>
+
+                            <button type="submit" class="form-submit-btn" id="submitBtn">
+                                <span class="submit-text">Send Message</span>
+                                <span class="submit-loading" style="display: none;">Sending...</span>
+                            </button>
+
+                            <div class="form-success" id="formSuccess" style="display: none;">
+                                <p>✅ Thank you! Your message has been sent successfully. We'll get back to you soon.</p>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="contact-info-container">
+                        <h3 class="contact-info-title">Contact Information</h3>
+                        
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">📧</div>
+                            <div class="contact-info-content">
+                                <h4>Email</h4>
+                                <a href="mailto:contact@rajcreation.com" class="contact-link">contact@rajcreation.com</a>
+                            </div>
+                        </div>
+
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">🌐</div>
+                            <div class="contact-info-content">
+                                <h4>Website</h4>
+                                <a href="https://rajcreation.com" target="_blank" rel="noopener noreferrer" class="contact-link">www.rajcreation.com</a>
+                            </div>
+                        </div>
+
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">📍</div>
+                            <div class="contact-info-content">
+                                <h4>Location</h4>
+                                <p class="contact-text">Your Location Address<br>City, State, Country</p>
+                            </div>
+                        </div>
+
+                        <!-- Social Media Links -->
+                        <div class="social-media-section">
+                            <h4 class="social-title">Follow Us</h4>
+                            <div class="social-links">
+                                <a href="https://facebook.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
+                                    <span class="social-icon">📘</span>
+                                    <span>Facebook</span>
+                                </a>
+                                <a href="https://twitter.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter">
+                                    <span class="social-icon">🐦</span>
+                                    <span>Twitter</span>
+                                </a>
+                                <a href="https://instagram.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+                                    <span class="social-icon">📷</span>
+                                    <span>Instagram</span>
+                                </a>
+                                <a href="https://youtube.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="YouTube">
+                                    <span class="social-icon">▶️</span>
+                                    <span>YouTube</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section">
+                    <h3 class="faq-title">Frequently Asked Questions</h3>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>How do I watch live streams?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Simply visit our homepage and the live stream will automatically start playing. Make sure you have a stable internet connection for the best viewing experience.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>Can I watch past broadcasts?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Yes! All recorded events are available in the Video section. You can browse, search, and watch any past broadcast at your convenience.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>How do I set reminders for upcoming events?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Visit the Schedule section, find the event you want to be reminded about, and click the "Set Reminder" button. You'll receive a browser notification before the event starts.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>Is the service free to use?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Yes, RajCreation Live is completely free to use. You can watch live streams and access all recorded content without any charges.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>What timezone are the schedules in?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>All schedules are displayed in IST (Indian Standard Time, UTC+5:30). You can check the timezone information in the Schedule section.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>How can I contact support?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>You can reach us through the contact form above, or email us directly at contact@rajcreation.com. We typically respond within 24-48 hours.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">RajCreation Live</h3>
+                    <p class="footer-description">Your premier destination for live telecast streaming.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-heading">Connect</h4>
+                    <p class="footer-text">Stay updated with our latest streams and updates.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 RajCreation</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button class="search-close" id="searchClose" aria-label="Close search">×</button>
+            </div>
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search videos, photos, events..." 
+                       autocomplete="off"
+                       aria-label="Search input">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Quick Links Menu -->
+    <div class="quick-links-menu" id="quickLinksMenu">
+        <button class="quick-links-toggle" id="quickLinksToggle" aria-label="Quick links" title="Quick links">
+            <span>⚡</span>
+        </button>
+        <div class="quick-links-content" id="quickLinksContent">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="video.html">📹 Recorded Videos</a></li>
+                <li><a href="photo.html">📸 Photo Gallery</a></li>
+                <li><a href="schedule.html">📅 Schedule</a></li>
+                <li><a href="about.html">ℹ️ About</a></li>
+                <li><a href="contact.html">✉️ Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>
+

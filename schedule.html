@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RajCreation Live - Schedule">
+    <meta name="keywords" content="RajCreation, schedule, events, calendar">
+    <meta name="author" content="RajCreation">
+    <meta name="robots" content="index, follow">
+    
+    <title>Schedule - RajCreation Live</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+    
+    <!-- Early error suppression for third-party scripts -->
+    <script>
+    (function() {
+        'use strict';
+        const suppressPatterns = [
+            'XML Parsing Error', 'datacenter.live.qcloud.com', 'not well-formed', 'qcloud.com',
+            'tcplayer', 'mozPressure', 'mozInputSource', 'VideoJS', 'downloadable font',
+            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com'
+        ];
+        function shouldSuppress(msg) {
+            const msgStr = String(msg).toLowerCase();
+            return suppressPatterns.some(p => msgStr.includes(p.toLowerCase()));
+        }
+        const origError = console.error;
+        console.error = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origError.apply(console, args);
+        };
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origWarn.apply(console, args);
+        };
+        const origLog = console.log;
+        console.log = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origLog.apply(console, args);
+        };
+        window.addEventListener('error', function(e) {
+            const msg = (e.message || '') + ' ' + (e.filename || '');
+            if (shouldSuppress(msg)) { e.preventDefault(); e.stopPropagation(); return true; }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+            if (shouldSuppress(String(e.reason || ''))) { e.preventDefault(); return true; }
+        });
+    })();
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="site-title">RajCreation Live</h1>
+                
+                <!-- Header Controls -->
+                <div class="header-controls">
+                    <button class="header-control-btn search-btn" id="searchBtn" aria-label="Search" title="Search">
+                        <span>🔍</span>
+                    </button>
+                    
+                    <button class="header-control-btn theme-switcher" id="themeSwitcher" aria-label="Toggle theme" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    
+                </div>
+                <nav class="header-nav">
+                    <ul class="header-nav-menu" id="navMenu">
+                        <li><a href="index.html" class="header-nav-link">Home</a></li>
+                        <li><a href="video.html" class="header-nav-link">Video</a></li>
+                        <li><a href="photo.html" class="header-nav-link">Photo</a></li>
+                        <li><a href="about.html" class="header-nav-link">About</a></li>
+                        <li><a href="schedule.html" class="header-nav-link active">Schedule</a></li>
+                        <li><a href="contact.html" class="header-nav-link">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="live-indicator" id="liveIndicator">
+                    <span class="live-dot"></span>
+                    <span class="live-text">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb-list" id="breadcrumbList">
+                <li><a href="index.html">Home</a></li>
+                <li>Schedule</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Schedule Section -->
+            <section class="schedule-section">
+                <div class="page-header">
+                    <h2 class="page-title">Live Stream Schedule</h2>
+                    <p class="page-description">View upcoming live stream events and past broadcasts</p>
+                </div>
+
+                <!-- Schedule View Toggle -->
+                <div class="schedule-view-toggle">
+                    <button class="view-btn active" data-view="list" id="listViewBtn">📋 List View</button>
+                    <button class="view-btn" data-view="calendar" id="calendarViewBtn">📅 Calendar View</button>
+                </div>
+
+                <!-- Schedule Filters -->
+                <div class="schedule-filters">
+                    <button class="schedule-filter-btn active" data-filter="all">All Events</button>
+                    <button class="schedule-filter-btn" data-filter="upcoming">Upcoming</button>
+                    <button class="schedule-filter-btn" data-filter="past">Past Events</button>
+                    <button class="schedule-filter-btn" data-filter="recurring">Recurring</button>
+                </div>
+
+                <!-- List View -->
+                <div class="schedule-list-view active" id="scheduleListView">
+                    <div class="schedule-events" id="scheduleEvents">
+                        <!-- Event Item 1 -->
+                        <div class="schedule-event-item" data-date="2024-12-31" data-category="upcoming" data-recurring="false">
+                            <div class="event-date-badge">
+                                <span class="event-day">31</span>
+                                <span class="event-month">Dec</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">New Year Special Program</h3>
+                                    <span class="event-status upcoming">🔴 Upcoming</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 8:00 PM - 10:00 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Special Event</span>
+                                </div>
+                                <p class="event-description">Join us for a special New Year celebration program with live performances and entertainment.</p>
+                                <div class="event-actions">
+                                    <button class="event-reminder-btn" data-event-id="1">🔔 Set Reminder</button>
+                                    <button class="event-export-btn" data-event-id="1">📥 Add to Calendar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Item 2 -->
+                        <div class="schedule-event-item" data-date="2025-01-05" data-category="upcoming" data-recurring="false">
+                            <div class="event-date-badge">
+                                <span class="event-day">05</span>
+                                <span class="event-month">Jan</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">Weekly Live Show</h3>
+                                    <span class="event-status upcoming">🔴 Upcoming</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 7:00 PM - 9:00 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Regular Show</span>
+                                </div>
+                                <p class="event-description">Our weekly live show featuring special guests and interactive sessions.</p>
+                                <div class="event-actions">
+                                    <button class="event-reminder-btn" data-event-id="2">🔔 Set Reminder</button>
+                                    <button class="event-export-btn" data-event-id="2">📥 Add to Calendar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Item 3 (Past) -->
+                        <div class="schedule-event-item" data-date="2024-12-25" data-category="past" data-recurring="false">
+                            <div class="event-date-badge past">
+                                <span class="event-day">25</span>
+                                <span class="event-month">Dec</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">Christmas Special Program</h3>
+                                    <span class="event-status past">✅ Completed</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 6:00 PM - 8:30 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Special Event</span>
+                                </div>
+                                <p class="event-description">Christmas celebration program with festive performances.</p>
+                                <div class="event-actions">
+                                    <a href="video.html" class="event-watch-btn">▶ Watch Recording</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Item 4 (Recurring) -->
+                        <div class="schedule-event-item" data-date="2025-01-12" data-category="upcoming" data-recurring="true">
+                            <div class="event-date-badge">
+                                <span class="event-day">12</span>
+                                <span class="event-month">Jan</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">Monthly Discussion Forum</h3>
+                                    <span class="event-status upcoming">🔴 Upcoming</span>
+                                    <span class="event-recurring-badge">🔄 Recurring</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 5:00 PM - 7:00 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Discussion</span>
+                                </div>
+                                <p class="event-description">Monthly discussion forum on current topics. Repeats every month.</p>
+                                <div class="event-actions">
+                                    <button class="event-reminder-btn" data-event-id="4">🔔 Set Reminder</button>
+                                    <button class="event-export-btn" data-event-id="4">📥 Add to Calendar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar View -->
+                <div class="schedule-calendar-view" id="scheduleCalendarView">
+                    <div class="calendar-header">
+                        <button class="calendar-nav-btn" id="calendarPrev">‹</button>
+                        <h3 class="calendar-month-year" id="calendarMonthYear">December 2024</h3>
+                        <button class="calendar-nav-btn" id="calendarNext">›</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be generated by JavaScript -->
+                    </div>
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-color upcoming"></span>
+                            <span>Upcoming Event</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color past"></span>
+                            <span>Past Event</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color recurring"></span>
+                            <span>Recurring Event</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timezone Info -->
+                <div class="schedule-timezone-info">
+                    <p>All times are displayed in <strong>IST (Indian Standard Time, UTC+5:30)</strong>. Times may vary based on your location.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">RajCreation Live</h3>
+                    <p class="footer-description">Your premier destination for live telecast streaming.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-heading">Connect</h4>
+                    <p class="footer-text">Stay updated with our latest streams and updates.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 RajCreation</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button class="search-close" id="searchClose" aria-label="Close search">×</button>
+            </div>
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search videos, photos, events..." 
+                       autocomplete="off"
+                       aria-label="Search input">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Quick Links Menu -->
+    <div class="quick-links-menu" id="quickLinksMenu">
+        <button class="quick-links-toggle" id="quickLinksToggle" aria-label="Quick links" title="Quick links">
+            <span>⚡</span>
+        </button>
+        <div class="quick-links-content" id="quickLinksContent">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="video.html">📹 Recorded Videos</a></li>
+                <li><a href="photo.html">📸 Photo Gallery</a></li>
+                <li><a href="schedule.html">📅 Schedule</a></li>
+                <li><a href="about.html">ℹ️ About</a></li>
+                <li><a href="contact.html">✉️ Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>
+

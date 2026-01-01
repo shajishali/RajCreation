@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RajCreation Live - Photo Gallery">
+    <meta name="keywords" content="RajCreation, photos, gallery">
+    <meta name="author" content="RajCreation">
+    <meta name="robots" content="index, follow">
+    
+    <title>Photo Gallery - RajCreation Live</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+    
+    <!-- Early error suppression for third-party scripts -->
+    <script>
+    (function() {
+        'use strict';
+        const suppressPatterns = [
+            'XML Parsing Error', 'datacenter.live.qcloud.com', 'not well-formed', 'qcloud.com',
+            'tcplayer', 'mozPressure', 'mozInputSource', 'VideoJS', 'downloadable font',
+            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com'
+        ];
+        function shouldSuppress(msg) {
+            const msgStr = String(msg).toLowerCase();
+            return suppressPatterns.some(p => msgStr.includes(p.toLowerCase()));
+        }
+        const origError = console.error;
+        console.error = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origError.apply(console, args);
+        };
+        const origWarn = console.warn;
+        console.warn = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origWarn.apply(console, args);
+        };
+        const origLog = console.log;
+        console.log = function(...args) {
+            const msg = args.map(a => String(a)).join(' ');
+            if (!shouldSuppress(msg)) origLog.apply(console, args);
+        };
+        window.addEventListener('error', function(e) {
+            const msg = (e.message || '') + ' ' + (e.filename || '');
+            if (shouldSuppress(msg)) { e.preventDefault(); e.stopPropagation(); return true; }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+            if (shouldSuppress(String(e.reason || ''))) { e.preventDefault(); return true; }
+        });
+    })();
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="site-title">RajCreation Live</h1>
+                
+                <!-- Header Controls -->
+                <div class="header-controls">
+                    <button class="header-control-btn search-btn" id="searchBtn" aria-label="Search" title="Search">
+                        <span>🔍</span>
+                    </button>
+                    
+                    <button class="header-control-btn theme-switcher" id="themeSwitcher" aria-label="Toggle theme" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    
+                </div>
+                <nav class="header-nav">
+                    <ul class="header-nav-menu" id="navMenu">
+                        <li><a href="index.html" class="header-nav-link">Home</a></li>
+                        <li><a href="video.html" class="header-nav-link">Video</a></li>
+                        <li><a href="photo.html" class="header-nav-link active">Photo</a></li>
+                        <li><a href="about.html" class="header-nav-link">About</a></li>
+                        <li><a href="schedule.html" class="header-nav-link">Schedule</a></li>
+                        <li><a href="contact.html" class="header-nav-link">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="live-indicator" id="liveIndicator">
+                    <span class="live-dot"></span>
+                    <span class="live-text">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb-list" id="breadcrumbList">
+                <li><a href="index.html">Home</a></li>
+                <li>Photo</li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Photos Section -->
+            <section class="photos-section">
+                <div class="page-header">
+                    <h2 class="page-title">Event Photos</h2>
+                    <p class="page-description">Browse photos from our events and programs</p>
+                </div>
+
+                <!-- Admin Edit Buttons (Only visible to logged-in admins) -->
+                <div class="admin-edit-buttons" id="adminEditButtonsPhoto" style="display: none;">
+                    <button class="admin-edit-btn" id="editPhotosBtn" title="Manage Photos">
+                        <span>📸</span>
+                        <span>Manage Photos</span>
+                    </button>
+                </div>
+
+                <div class="photos-gallery" id="photosGallery">
+                    <!-- Photos will be loaded here dynamically -->
+                </div>
+
+                <!-- Password Protection Modal -->
+                <div class="password-modal" id="passwordModal" style="display: none;">
+                    <div class="password-modal-overlay"></div>
+                    <div class="password-modal-content">
+                        <div class="password-modal-header">
+                            <h3>🔒 Password Required</h3>
+                            <button class="password-modal-close" onclick="closePasswordModal()">&times;</button>
+                        </div>
+                        <div class="password-modal-body">
+                            <p>Enter password to access this program:</p>
+                            <input type="password" id="programPassword" placeholder="Enter password" class="password-input">
+                            <p class="password-error" id="passwordError" style="display: none; color: #ff4444; margin-top: 0.5rem;"></p>
+                        </div>
+                        <div class="password-modal-footer">
+                            <button class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                            <button class="btn-submit" onclick="submitProgramPassword()">Submit</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photo Lightbox Modal -->
+                <div class="photo-lightbox" id="photoLightbox">
+                    <div class="lightbox-overlay"></div>
+                    <div class="lightbox-content">
+                        <button class="lightbox-close" id="lightboxClose" aria-label="Close lightbox">&times;</button>
+                        <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Previous photo">&#8249;</button>
+                        <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Next photo">&#8250;</button>
+                        <div class="lightbox-image-container">
+                            <img src="" alt="" id="lightboxImage" class="lightbox-image">
+                            <div class="lightbox-info">
+                                <h3 id="lightboxTitle" class="lightbox-title"></h3>
+                                <div id="lightboxMetadata" class="lightbox-metadata"></div>
+                                <p id="lightboxDescription" class="lightbox-description"></p>
+                            </div>
+                        </div>
+                        <div class="lightbox-actions">
+                            <a href="" id="lightboxProgramLink" target="_blank" rel="noopener noreferrer" class="photo-button">View Program</a>
+                            <button class="lightbox-download" id="lightboxDownload" aria-label="Download photo">⬇ Download</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">RajCreation Live</h3>
+                    <p class="footer-description">Your premier destination for live telecast streaming.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-heading">Connect</h4>
+                    <p class="footer-text">Stay updated with our latest streams and updates.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 RajCreation</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button class="search-close" id="searchClose" aria-label="Close search">×</button>
+            </div>
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search videos, photos, events..." 
+                       autocomplete="off"
+                       aria-label="Search input">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Quick Links Menu -->
+    <div class="quick-links-menu" id="quickLinksMenu">
+        <button class="quick-links-toggle" id="quickLinksToggle" aria-label="Quick links" title="Quick links">
+            <span>⚡</span>
+        </button>
+        <div class="quick-links-content" id="quickLinksContent">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="index.html">🏠 Home</a></li>
+                <li><a href="video.html">📹 Recorded Videos</a></li>
+                <li><a href="photo.html">📸 Photo Gallery</a></li>
+                <li><a href="schedule.html">📅 Schedule</a></li>
+                <li><a href="about.html">ℹ️ About</a></li>
+                <li><a href="contact.html">✉️ Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+    
+    <style>
+        .password-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .password-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .password-modal-content {
+            position: relative;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            border: 1px solid #333;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .password-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .password-modal-header h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.5rem;
+        }
+        
+        .password-modal-close {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .password-modal-close:hover {
+            color: #fff;
+        }
+        
+        .password-modal-body p {
+            color: #ccc;
+            margin-bottom: 1rem;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .password-input:focus {
+            outline: none;
+            border-color: #ff4444;
+        }
+        
+        .password-modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .btn-cancel,
+        .btn-submit {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cancel {
+            background: #444;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #555;
+        }
+        
+        .btn-submit {
+            background: #ff4444;
+            color: white;
+        }
+        
+        .btn-submit:hover {
+            background: #ff6666;
+        }
+    </style>
+    
+    <script>
+        // Store current program URL for password access
+        let currentProgramUrl = '';
+        let currentPhotoIndex = -1;
+        
+        // Load photos from localStorage
+        function loadPhotos() {
+            const gallery = document.getElementById('photosGallery');
+            const photosJson = localStorage.getItem('eventPhotosList');
+            const photos = photosJson ? JSON.parse(photosJson) : [];
+            
+            // Check if admin is logged in
+            if (window.RajCreationAdmin && window.RajCreationAdmin.checkSession()) {
+                document.getElementById('adminEditButtonsPhoto').style.display = 'block';
+                document.getElementById('editPhotosBtn').onclick = function() {
+                    window.location.href = 'admin/photo.html';
+                };
+            }
+            
+            if (photos.length === 0) {
+                gallery.innerHTML = `
+                    <div style="text-align: center; padding: 4rem 2rem; color: #999; grid-column: 1 / -1;">
+                        <div style="font-size: 4rem; margin-bottom: 1rem;">📸</div>
+                        <h2 style="color: #fff; margin-bottom: 0.5rem;">No Photos Yet</h2>
+                        <p>Photos will be displayed here. Login to admin to add photos.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            photos.forEach((photo, index) => {
+                html += `
+                    <div class="photo-item" data-category="event">
+                        <div class="photo-thumbnail" data-photo-index="${index}">
+                            <img src="${photo.thumbnail || 'https://via.placeholder.com/300x200/1a1a1a/ffffff?text=Event+Photo+' + (index + 1)}" 
+                                 alt="${photo.title}" 
+                                 class="photo-image" 
+                                 loading="lazy"
+                                 data-full-image="${photo.fullImage || photo.thumbnail || ''}">
+                            <div class="photo-overlay">
+                                <button class="photo-view-btn" aria-label="View full size" onclick="openPhotoLightbox(${index})">🔍</button>
+                            </div>
+                        </div>
+                        <div class="photo-info">
+                            <h3 class="photo-title">${photo.title}</h3>
+                            <div class="photo-metadata">
+                                <span class="photo-date">📅 ${photo.date}</span>
+                                <span class="photo-location">📍 ${photo.location}</span>
+                            </div>
+                            <p class="photo-description">${photo.description}</p>
+                            <button class="photo-button" onclick="openProgramWithPassword(${index})" style="background: #ff4444; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%;">View Program</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            gallery.innerHTML = html;
+        }
+        
+        // Open program with password protection
+        function openProgramWithPassword(photoIndex) {
+            // Get photo data from localStorage
+            const photosJson = localStorage.getItem('eventPhotosList');
+            const photos = photosJson ? JSON.parse(photosJson) : [];
+            
+            if (photoIndex >= 0 && photos[photoIndex]) {
+                const photo = photos[photoIndex];
+                const url = photo.programUrl || '';
+                
+                if (!url || url === '') {
+                    alert('Program URL not set for this photo.');
+                    return;
+                }
+                
+                currentProgramUrl = url;
+                currentPhotoIndex = photoIndex;
+                document.getElementById('passwordModal').style.display = 'flex';
+                document.getElementById('programPassword').value = '';
+                document.getElementById('programPassword').focus();
+                document.getElementById('passwordError').style.display = 'none';
+            } else {
+                alert('Photo data not found.');
+            }
+        }
+        
+        // Submit password
+        function submitProgramPassword() {
+            const password = document.getElementById('programPassword').value;
+            const photosJson = localStorage.getItem('eventPhotosList');
+            const photos = photosJson ? JSON.parse(photosJson) : [];
+            
+            if (currentPhotoIndex >= 0 && photos[currentPhotoIndex]) {
+                const photo = photos[currentPhotoIndex];
+                const correctPassword = photo.password || '';
+                
+                if (password === correctPassword) {
+                    // Password correct - get URL and open in new tab
+                    // Get fresh URL from photo object
+                    let url = photo.programUrl || currentProgramUrl || '';
+                    
+                    if (!url || url.trim() === '') {
+                        alert('Error: Program URL is not set for this photo. Please edit the photo and add a valid URL.');
+                        closePasswordModal();
+                        return;
+                    }
+                    
+                    // Clean and validate URL
+                    url = url.trim();
+                    
+                    // Ensure URL has protocol (http:// or https://)
+                    if (!url.match(/^https?:\/\//i)) {
+                        url = 'https://' + url;
+                    }
+                    
+                    // Validate URL format
+                    try {
+                        new URL(url); // This will throw if URL is invalid
+                    } catch (e) {
+                        alert('Error: Invalid URL format. Please check the program URL: ' + url);
+                        closePasswordModal();
+                        return;
+                    }
+                    
+                    console.log('Validated URL:', url);
+                    
+                    // Close modal first
+                    closePasswordModal();
+                    
+                    // Open URL in new tab - use link method (most reliable)
+                    console.log('Opening URL in new tab:', url);
+                    
+                    try {
+                        // Create a link element and click it (works better than window.open in some cases)
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.style.display = 'none';
+                        
+                        // Add to body temporarily
+                        document.body.appendChild(link);
+                        
+                        // Simulate click
+                        link.click();
+                        
+                        // Remove from DOM after click
+                        setTimeout(function() {
+                            try {
+                                if (link.parentNode) {
+                                    document.body.removeChild(link);
+                                }
+                            } catch (e) {
+                                // Link already removed
+                            }
+                        }, 100);
+                    } catch (error) {
+                        console.error('Error with link method, trying window.open:', error);
+                        // Fallback to window.open
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    }
+                } else {
+                    // Password incorrect
+                    document.getElementById('passwordError').textContent = 'Incorrect password. Please try again.';
+                    document.getElementById('passwordError').style.display = 'block';
+                    document.getElementById('programPassword').value = '';
+                    document.getElementById('programPassword').focus();
+                }
+            } else {
+                alert('Error: Photo data not found.');
+                closePasswordModal();
+            }
+        }
+        
+        // Close password modal
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('programPassword').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            currentProgramUrl = '';
+            currentPhotoIndex = -1;
+        }
+        
+        // Open photo lightbox
+        function openPhotoLightbox(index) {
+            const photosJson = localStorage.getItem('eventPhotosList');
+            const photos = photosJson ? JSON.parse(photosJson) : [];
+            const photo = photos[index];
+            
+            if (!photo) return;
+            
+            // Use existing lightbox functionality from main.js
+            const lightbox = document.getElementById('photoLightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const lightboxTitle = document.getElementById('lightboxTitle');
+            const lightboxMetadata = document.getElementById('lightboxMetadata');
+            const lightboxDescription = document.getElementById('lightboxDescription');
+            const lightboxProgramLink = document.getElementById('lightboxProgramLink');
+            
+            lightboxImage.src = photo.fullImage || photo.thumbnail || '';
+            lightboxTitle.textContent = photo.title;
+            lightboxMetadata.innerHTML = `
+                <span class="photo-date">📅 ${photo.date}</span>
+                <span class="photo-location">📍 ${photo.location}</span>
+            `;
+            lightboxDescription.textContent = photo.description;
+            
+            // Update program link to use password function
+            lightboxProgramLink.onclick = function(e) {
+                e.preventDefault();
+                closePhotoLightbox();
+                openProgramWithPassword(index);
+            };
+            lightboxProgramLink.textContent = 'View Program';
+            lightboxProgramLink.href = '#';
+            lightboxProgramLink.target = '_blank';
+            
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closePhotoLightbox() {
+            const lightbox = document.getElementById('photoLightbox');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // Handle Enter key in password input
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('programPassword');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        submitProgramPassword();
+                    }
+                });
+            }
+            
+            // Close password modal on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const passwordModal = document.getElementById('passwordModal');
+                    if (passwordModal && passwordModal.style.display === 'flex') {
+                        closePasswordModal();
+                    }
+                }
+            });
+            
+            // Load photos
+            loadPhotos();
+        });
+    </script>
+</body>
+</html>
+
