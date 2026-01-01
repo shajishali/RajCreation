@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RajCreation Live - Watch live telecast streaming">
+    <meta name="keywords" content="RajCreation, live stream, telecast">
+    <meta name="author" content="RajCreation">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="RajCreation Live">
+    <meta property="og:description" content="Watch live telecast streaming">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RajCreation Live">
+    <meta name="twitter:description" content="Watch live telecast streaming">
+    
+    <title>RajCreation Live - Live Telecast</title>
+    
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="css/style.css" as="style">
+    <link rel="preload" href="js/main.js" as="script">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="site-title">RajCreation Live</h1>
+                
+                <!-- Header Controls -->
+                <div class="header-controls">
+                    <!-- Search Button -->
+                    <button class="header-control-btn search-btn" id="searchBtn" aria-label="Search" title="Search">
+                        <span>🔍</span>
+                    </button>
+                    
+                    <!-- Theme Switcher -->
+                    <button class="header-control-btn theme-switcher" id="themeSwitcher" aria-label="Toggle theme" title="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                    
+                    <!-- Accessibility Controls -->
+                    <div class="accessibility-controls" id="accessibilityControls">
+                        <button class="accessibility-btn" id="fontSizeDecrease" aria-label="Decrease font size" title="Decrease font size">A-</button>
+                        <button class="accessibility-btn" id="fontSizeReset" aria-label="Reset font size" title="Reset font size">A</button>
+                        <button class="accessibility-btn" id="fontSizeIncrease" aria-label="Increase font size" title="Increase font size">A+</button>
+                    </div>
+                </div>
+                <nav class="header-nav">
+                    <ul class="header-nav-menu" id="navMenu">
+                        <li><a href="index.html" class="header-nav-link active">Home</a></li>
+                        <li><a href="#video" class="header-nav-link">Video</a></li>
+                        <li><a href="#photo" class="header-nav-link">Photo</a></li>
+                        <li><a href="#about" class="header-nav-link">About</a></li>
+                        <li><a href="#schedule" class="header-nav-link">Schedule</a></li>
+                        <li><a href="#contact" class="header-nav-link">Contact</a></li>
+                    </ul>
+                </nav>
+                <div class="live-indicator" id="liveIndicator">
+                    <span class="live-dot"></span>
+                    <span class="live-text">LIVE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+        <div class="container">
+            <ol class="breadcrumb-list" id="breadcrumbList">
+                <li><a href="index.html">Home</a></li>
+            </ol>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Live Stream Section -->
+            <div class="video-container">
+                <!-- Stream Status Bar -->
+                <div class="stream-status-bar" id="streamStatusBar">
+                    <div class="status-indicators">
+                        <div class="status-item">
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="streamStatus">Checking...</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Quality:</span>
+                            <span class="status-value" id="streamQuality">Auto</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Connection:</span>
+                            <span class="status-value" id="connectionQuality">Good</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Latency:</span>
+                            <span class="status-value" id="streamLatency">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="video-wrapper" id="videoWrapper">
+                    <!-- Live Stream Embed Placeholder -->
+                    
+                    <!-- Custom Video Controls Overlay -->
+                    <div class="video-controls-overlay" id="videoControlsOverlay">
+                        <div class="controls-top">
+                            <button class="control-btn pip-btn" id="pipBtn" aria-label="Picture in Picture" title="Picture in Picture">
+                                <span>📺</span>
+                            </button>
+                            <button class="control-btn fullscreen-btn" id="fullscreenBtn" aria-label="Fullscreen" title="Fullscreen">
+                                <span>⛶</span>
+                            </button>
+                        </div>
+                        <div class="controls-bottom">
+                            <div class="controls-left">
+                                <button class="control-btn play-pause-btn" id="playPauseBtn" aria-label="Play/Pause">
+                                    <span class="play-icon">▶</span>
+                                    <span class="pause-icon" style="display: none;">⏸</span>
+                                </button>
+                                <div class="volume-control">
+                                    <button class="control-btn volume-btn" id="volumeBtn" aria-label="Volume">
+                                        <span class="volume-icon">🔊</span>
+                                        <span class="mute-icon" style="display: none;">🔇</span>
+                                    </button>
+                                    <input type="range" 
+                                           class="volume-slider" 
+                                           id="volumeSlider" 
+                                           min="0" 
+                                           max="100" 
+                                           value="100"
+                                           aria-label="Volume slider">
+                                </div>
+                                <div class="playback-speed">
+                                    <button class="control-btn speed-btn" id="speedBtn" aria-label="Playback Speed" title="Playback Speed">
+                                        <span>1x</span>
+                                    </button>
+                                    <div class="speed-menu" id="speedMenu">
+                                        <button class="speed-option" data-speed="0.5">0.5x</button>
+                                        <button class="speed-option" data-speed="0.75">0.75x</button>
+                                        <button class="speed-option active" data-speed="1">1x</button>
+                                        <button class="speed-option" data-speed="1.25">1.25x</button>
+                                        <button class="speed-option" data-speed="1.5">1.5x</button>
+                                        <button class="speed-option" data-speed="2">2x</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="controls-right">
+                                <span class="stream-info" id="streamInfo">Live</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stream Loading Indicator -->
+                    <div class="stream-loading" id="streamLoading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading stream...</p>
+                    </div>
+                    
+                    <!-- Offline State (hidden by default) -->
+                    <div class="offline-state" id="offlineState">
+                        <div class="offline-content">
+                            <div class="offline-icon">📺</div>
+                            <h2>Stream Offline</h2>
+                            <p>The live stream is currently unavailable. Please check back later.</p>
+                            <button class="retry-btn" id="retryStreamBtn">🔄 Retry Connection</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stream Health Monitor -->
+                <div class="stream-health-monitor" id="streamHealthMonitor">
+                    <div class="health-item">
+                        <div class="health-label">Buffer Status</div>
+                        <div class="health-bar">
+                            <div class="health-fill" id="bufferStatus" style="width: 0%"></div>
+                        </div>
+                        <span class="health-value" id="bufferValue">0%</span>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-label">Connection Quality</div>
+                        <div class="health-indicator" id="connectionIndicator">
+                            <span class="indicator-dot good"></span>
+                            <span>Good</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recorded Videos Section -->
+            <section id="video" class="recorded-videos-section">
+                <div class="page-header">
+                    <h2 class="page-title">Recorded Videos</h2>
+                    <p class="page-description">Browse and rewatch all recorded events and past live streams</p>
+                </div>
+
+                <!-- Video Search and Filter -->
+                <div class="video-controls">
+                    <div class="video-search-container">
+                        <input type="text" 
+                               id="videoSearch" 
+                               class="video-search-input" 
+                               placeholder="Search videos..." 
+                               aria-label="Search videos">
+                        <button class="video-search-btn" aria-label="Search">🔍</button>
+                    </div>
+                    <div class="video-filter-container">
+                        <button class="video-filter-btn active" data-category="all">All</button>
+                        <button class="video-filter-btn" data-category="recent">Recent</button>
+                        <button class="video-filter-btn" data-category="popular">Popular</button>
+                        <button class="video-filter-btn" data-category="events">Events</button>
+                    </div>
+                </div>
+
+                <!-- Video Player Container -->
+                <div class="video-container">
+                    <div class="video-wrapper" id="recordedVideoWrapper">
+                        <!-- Recorded Videos Embed Placeholder -->
+                        <!-- Offline State (hidden by default) -->
+                        <div class="offline-state" id="recordedOfflineState">
+                            <div class="offline-content">
+                                <div class="offline-icon">📹</div>
+                                <h2>No Videos Found</h2>
+                                <p>Recorded videos will be displayed here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Metadata Display -->
+                <div class="video-metadata-display" id="videoMetadata">
+                    <div class="video-meta-item">
+                        <span class="meta-label">📅 Upload Date:</span>
+                        <span class="meta-value" id="videoUploadDate">Loading...</span>
+                    </div>
+                    <div class="video-meta-item">
+                        <span class="meta-label">⏱ Duration:</span>
+                        <span class="meta-value" id="videoDuration">Loading...</span>
+                    </div>
+                    <div class="video-meta-item">
+                        <span class="meta-label">📊 Category:</span>
+                        <span class="meta-value" id="videoCategory">All Videos</span>
+                    </div>
+                </div>
+
+                <!-- Video Playlist/Archive (if available) -->
+                <div class="video-playlist-section">
+                    <h3 class="playlist-title">Video Archive</h3>
+                    <div class="video-playlist" id="videoPlaylist">
+                        <!-- Video playlist items will be dynamically added here -->
+                        <div class="playlist-item" data-video-id="1" data-category="recent">
+                            <div class="playlist-thumbnail">
+                                <img src="https://via.placeholder.com/160x90/1a1a1a/ffffff?text=Video+1" alt="Video 1" loading="lazy">
+                                <div class="playlist-duration">10:30</div>
+                            </div>
+                            <div class="playlist-info">
+                                <h4 class="playlist-video-title">Event Program 1</h4>
+                                <div class="playlist-meta">
+                                    <span class="playlist-date">📅 Jan 15, 2024</span>
+                                    <span class="playlist-views">👁 1.2K views</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="playlist-item" data-video-id="2" data-category="popular">
+                            <div class="playlist-thumbnail">
+                                <img src="https://via.placeholder.com/160x90/1a1a1a/ffffff?text=Video+2" alt="Video 2" loading="lazy">
+                                <div class="playlist-duration">25:45</div>
+                            </div>
+                            <div class="playlist-info">
+                                <h4 class="playlist-video-title">Event Program 2</h4>
+                                <div class="playlist-meta">
+                                    <span class="playlist-date">📅 Feb 20, 2024</span>
+                                    <span class="playlist-views">👁 2.5K views</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="playlist-item" data-video-id="3" data-category="events">
+                            <div class="playlist-thumbnail">
+                                <img src="https://via.placeholder.com/160x90/1a1a1a/ffffff?text=Video+3" alt="Video 3" loading="lazy">
+                                <div class="playlist-duration">18:20</div>
+                            </div>
+                            <div class="playlist-info">
+                                <h4 class="playlist-video-title">Event Program 3</h4>
+                                <div class="playlist-meta">
+                                    <span class="playlist-date">📅 Mar 10, 2024</span>
+                                    <span class="playlist-views">👁 890 views</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="playlist-item" data-video-id="4" data-category="recent">
+                            <div class="playlist-thumbnail">
+                                <img src="https://via.placeholder.com/160x90/1a1a1a/ffffff?text=Video+4" alt="Video 4" loading="lazy">
+                                <div class="playlist-duration">32:15</div>
+                            </div>
+                            <div class="playlist-info">
+                                <h4 class="playlist-video-title">Event Program 4</h4>
+                                <div class="playlist-meta">
+                                    <span class="playlist-date">📅 Apr 5, 2024</span>
+                                    <span class="playlist-views">👁 1.8K views</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Section -->
+                <div class="videos-info">
+                    <h3>About Recorded Videos</h3>
+                    <p>All recorded events and past live streams are stored here. You can rewind, pause, and watch any previous broadcast at your convenience. Use the video player controls to navigate through the timeline and find specific moments. Search and filter videos by category to find what you're looking for.</p>
+                </div>
+            </section>
+
+            <!-- Photos Section -->
+            <section id="photo" class="photos-section">
+                <div class="page-header">
+                    <h2 class="page-title">Event Photos</h2>
+                    <p class="page-description">Browse photos from our events and programs</p>
+                </div>
+
+                <div class="photos-gallery" id="photosGallery">
+                    <!-- Photo Item 1 -->
+                    <div class="photo-item" data-category="event">
+                        <div class="photo-thumbnail" data-photo-index="0">
+                            <img src="https://via.placeholder.com/300x200/1a1a1a/ffffff?text=Event+Photo+1" 
+                                 alt="Event Photo 1" 
+                                 class="photo-image" 
+                                 loading="lazy"
+                                 data-full-image="https://via.placeholder.com/1200x800/1a1a1a/ffffff?text=Event+Photo+1+Full">
+                            <div class="photo-overlay">
+                                <button class="photo-view-btn" aria-label="View full size">🔍</button>
+                            </div>
+                        </div>
+                        <div class="photo-info">
+                            <h3 class="photo-title">Program Title 1</h3>
+                            <div class="photo-metadata">
+                                <span class="photo-date">📅 January 15, 2024</span>
+                                <span class="photo-location">📍 Event Location</span>
+                            </div>
+                            <p class="photo-description">Event description or details</p>
+                            <a href="https://example.com/program1" target="_blank" rel="noopener noreferrer" class="photo-button">View Program</a>
+                        </div>
+                    </div>
+
+                    <!-- Photo Item 2 -->
+                    <div class="photo-item" data-category="event">
+                        <div class="photo-thumbnail" data-photo-index="1">
+                            <img src="https://via.placeholder.com/300x200/1a1a1a/ffffff?text=Event+Photo+2" 
+                                 alt="Event Photo 2" 
+                                 class="photo-image" 
+                                 loading="lazy"
+                                 data-full-image="https://via.placeholder.com/1200x800/1a1a1a/ffffff?text=Event+Photo+2+Full">
+                            <div class="photo-overlay">
+                                <button class="photo-view-btn" aria-label="View full size">🔍</button>
+                            </div>
+                        </div>
+                        <div class="photo-info">
+                            <h3 class="photo-title">Program Title 2</h3>
+                            <div class="photo-metadata">
+                                <span class="photo-date">📅 February 20, 2024</span>
+                                <span class="photo-location">📍 Event Location</span>
+                            </div>
+                            <p class="photo-description">Event description or details</p>
+                            <a href="https://example.com/program2" target="_blank" rel="noopener noreferrer" class="photo-button">View Program</a>
+                        </div>
+                    </div>
+
+                    <!-- Photo Item 3 -->
+                    <div class="photo-item" data-category="event">
+                        <div class="photo-thumbnail" data-photo-index="2">
+                            <img src="https://via.placeholder.com/300x200/1a1a1a/ffffff?text=Event+Photo+3" 
+                                 alt="Event Photo 3" 
+                                 class="photo-image" 
+                                 loading="lazy"
+                                 data-full-image="https://via.placeholder.com/1200x800/1a1a1a/ffffff?text=Event+Photo+3+Full">
+                            <div class="photo-overlay">
+                                <button class="photo-view-btn" aria-label="View full size">🔍</button>
+                            </div>
+                        </div>
+                        <div class="photo-info">
+                            <h3 class="photo-title">Program Title 3</h3>
+                            <div class="photo-metadata">
+                                <span class="photo-date">📅 March 10, 2024</span>
+                                <span class="photo-location">📍 Event Location</span>
+                            </div>
+                            <p class="photo-description">Event description or details</p>
+                            <a href="https://example.com/program3" target="_blank" rel="noopener noreferrer" class="photo-button">View Program</a>
+                        </div>
+                    </div>
+
+                    <!-- Photo Item 4 -->
+                    <div class="photo-item" data-category="event">
+                        <div class="photo-thumbnail" data-photo-index="3">
+                            <img src="https://via.placeholder.com/300x200/1a1a1a/ffffff?text=Event+Photo+4" 
+                                 alt="Event Photo 4" 
+                                 class="photo-image" 
+                                 loading="lazy"
+                                 data-full-image="https://via.placeholder.com/1200x800/1a1a1a/ffffff?text=Event+Photo+4+Full">
+                            <div class="photo-overlay">
+                                <button class="photo-view-btn" aria-label="View full size">🔍</button>
+                            </div>
+                        </div>
+                        <div class="photo-info">
+                            <h3 class="photo-title">Program Title 4</h3>
+                            <div class="photo-metadata">
+                                <span class="photo-date">📅 April 5, 2024</span>
+                                <span class="photo-location">📍 Event Location</span>
+                            </div>
+                            <p class="photo-description">Event description or details</p>
+                            <a href="https://example.com/program4" target="_blank" rel="noopener noreferrer" class="photo-button">View Program</a>
+                        </div>
+                    </div>
+
+                    <!-- Add more photo items as needed -->
+                </div>
+
+                <!-- Photo Lightbox Modal -->
+                <div class="photo-lightbox" id="photoLightbox">
+                    <div class="lightbox-overlay"></div>
+                    <div class="lightbox-content">
+                        <button class="lightbox-close" id="lightboxClose" aria-label="Close lightbox">&times;</button>
+                        <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Previous photo">&#8249;</button>
+                        <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Next photo">&#8250;</button>
+                        <div class="lightbox-image-container">
+                            <img src="" alt="" id="lightboxImage" class="lightbox-image">
+                            <div class="lightbox-info">
+                                <h3 id="lightboxTitle" class="lightbox-title"></h3>
+                                <div id="lightboxMetadata" class="lightbox-metadata"></div>
+                                <p id="lightboxDescription" class="lightbox-description"></p>
+                            </div>
+                        </div>
+                        <div class="lightbox-actions">
+                            <a href="" id="lightboxProgramLink" target="_blank" rel="noopener noreferrer" class="photo-button">View Program</a>
+                            <button class="lightbox-download" id="lightboxDownload" aria-label="Download photo">⬇ Download</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Schedule Section -->
+            <section id="schedule" class="schedule-section">
+                <div class="page-header">
+                    <h2 class="page-title">Live Stream Schedule</h2>
+                    <p class="page-description">View upcoming live stream events and past broadcasts</p>
+                </div>
+
+                <!-- Schedule View Toggle -->
+                <div class="schedule-view-toggle">
+                    <button class="view-btn active" data-view="list" id="listViewBtn">📋 List View</button>
+                    <button class="view-btn" data-view="calendar" id="calendarViewBtn">📅 Calendar View</button>
+                </div>
+
+                <!-- Schedule Filters -->
+                <div class="schedule-filters">
+                    <button class="schedule-filter-btn active" data-filter="all">All Events</button>
+                    <button class="schedule-filter-btn" data-filter="upcoming">Upcoming</button>
+                    <button class="schedule-filter-btn" data-filter="past">Past Events</button>
+                    <button class="schedule-filter-btn" data-filter="recurring">Recurring</button>
+                </div>
+
+                <!-- List View -->
+                <div class="schedule-list-view active" id="scheduleListView">
+                    <div class="schedule-events" id="scheduleEvents">
+                        <!-- Event Item 1 -->
+                        <div class="schedule-event-item" data-date="2024-12-31" data-category="upcoming" data-recurring="false">
+                            <div class="event-date-badge">
+                                <span class="event-day">31</span>
+                                <span class="event-month">Dec</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">New Year Special Program</h3>
+                                    <span class="event-status upcoming">🔴 Upcoming</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 8:00 PM - 10:00 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Special Event</span>
+                                </div>
+                                <p class="event-description">Join us for a special New Year celebration program with live performances and entertainment.</p>
+                                <div class="event-actions">
+                                    <button class="event-reminder-btn" data-event-id="1">🔔 Set Reminder</button>
+                                    <button class="event-export-btn" data-event-id="1">📥 Add to Calendar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Item 2 -->
+                        <div class="schedule-event-item" data-date="2025-01-05" data-category="upcoming" data-recurring="false">
+                            <div class="event-date-badge">
+                                <span class="event-day">05</span>
+                                <span class="event-month">Jan</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">Weekly Live Show</h3>
+                                    <span class="event-status upcoming">🔴 Upcoming</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 7:00 PM - 9:00 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Regular Show</span>
+                                </div>
+                                <p class="event-description">Our weekly live show featuring special guests and interactive sessions.</p>
+                                <div class="event-actions">
+                                    <button class="event-reminder-btn" data-event-id="2">🔔 Set Reminder</button>
+                                    <button class="event-export-btn" data-event-id="2">📥 Add to Calendar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Item 3 (Past) -->
+                        <div class="schedule-event-item" data-date="2024-12-25" data-category="past" data-recurring="false">
+                            <div class="event-date-badge past">
+                                <span class="event-day">25</span>
+                                <span class="event-month">Dec</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">Christmas Special Program</h3>
+                                    <span class="event-status past">✅ Completed</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 6:00 PM - 8:30 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Special Event</span>
+                                </div>
+                                <p class="event-description">Christmas celebration program with festive performances.</p>
+                                <div class="event-actions">
+                                    <a href="#video" class="event-watch-btn">▶ Watch Recording</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Item 4 (Recurring) -->
+                        <div class="schedule-event-item" data-date="2025-01-12" data-category="upcoming" data-recurring="true">
+                            <div class="event-date-badge">
+                                <span class="event-day">12</span>
+                                <span class="event-month">Jan</span>
+                            </div>
+                            <div class="event-details">
+                                <div class="event-header">
+                                    <h3 class="event-title">Monthly Discussion Forum</h3>
+                                    <span class="event-status upcoming">🔴 Upcoming</span>
+                                    <span class="event-recurring-badge">🔄 Recurring</span>
+                                </div>
+                                <div class="event-meta">
+                                    <span class="event-time">⏰ 5:00 PM - 7:00 PM</span>
+                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
+                                    <span class="event-category">📁 Discussion</span>
+                                </div>
+                                <p class="event-description">Monthly discussion forum on current topics. Repeats every month.</p>
+                                <div class="event-actions">
+                                    <button class="event-reminder-btn" data-event-id="4">🔔 Set Reminder</button>
+                                    <button class="event-export-btn" data-event-id="4">📥 Add to Calendar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar View -->
+                <div class="schedule-calendar-view" id="scheduleCalendarView">
+                    <div class="calendar-header">
+                        <button class="calendar-nav-btn" id="calendarPrev">‹</button>
+                        <h3 class="calendar-month-year" id="calendarMonthYear">December 2024</h3>
+                        <button class="calendar-nav-btn" id="calendarNext">›</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be generated by JavaScript -->
+                    </div>
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-color upcoming"></span>
+                            <span>Upcoming Event</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color past"></span>
+                            <span>Past Event</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color recurring"></span>
+                            <span>Recurring Event</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timezone Info -->
+                <div class="schedule-timezone-info">
+                    <p>All times are displayed in <strong>IST (Indian Standard Time, UTC+5:30)</strong>. Times may vary based on your location.</p>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="about-section">
+                <div class="page-header">
+                    <h2 class="page-title">About RajCreation Live</h2>
+                    <p class="page-description">Learn more about our mission, history, and the team behind RajCreation Live</p>
+                </div>
+
+                <!-- Mission Section -->
+                <div class="about-content">
+                    <div class="about-block">
+                        <div class="about-icon">🎯</div>
+                        <h3 class="about-block-title">Our Mission</h3>
+                        <p class="about-block-text">
+                            RajCreation Live is dedicated to bringing you high-quality live telecast streaming and recorded content. 
+                            Our mission is to provide an accessible platform for viewers to enjoy live events, programs, and archived 
+                            content from anywhere in the world. We strive to deliver seamless streaming experiences and maintain a 
+                            comprehensive archive of all our broadcasts.
+                        </p>
+                    </div>
+
+                    <div class="about-block">
+                        <div class="about-icon">📖</div>
+                        <h3 class="about-block-title">Our Story</h3>
+                        <p class="about-block-text">
+                            RajCreation Live was founded with a vision to create a premier destination for live telecast streaming. 
+                            Since our inception, we have been committed to delivering exceptional content and maintaining the highest 
+                            standards in broadcasting. We continuously work to improve our platform and expand our offerings to serve 
+                            our growing community of viewers.
+                        </p>
+                    </div>
+
+                    <div class="about-block">
+                        <div class="about-icon">👥</div>
+                        <h3 class="about-block-title">The Team</h3>
+                        <p class="about-block-text">
+                            Our team consists of passionate professionals dedicated to creating and delivering quality content. 
+                            From content creators to technical specialists, every member of the RajCreation Live team plays a crucial 
+                            role in bringing you the best streaming experience possible.
+                        </p>
+                    </div>
+
+                    <div class="about-block">
+                        <div class="about-icon">🏆</div>
+                        <h3 class="about-block-title">Achievements & Milestones</h3>
+                        <div class="achievements-list">
+                            <div class="achievement-item">
+                                <span class="achievement-year">2024</span>
+                                <div class="achievement-content">
+                                    <h4>Platform Launch</h4>
+                                    <p>Successfully launched RajCreation Live streaming platform</p>
+                                </div>
+                            </div>
+                            <div class="achievement-item">
+                                <span class="achievement-year">2024</span>
+                                <div class="achievement-content">
+                                    <h4>100+ Live Events</h4>
+                                    <p>Reached milestone of 100+ live streamed events</p>
+                                </div>
+                            </div>
+                            <div class="achievement-item">
+                                <span class="achievement-year">2024</span>
+                                <div class="achievement-content">
+                                    <h4>Growing Community</h4>
+                                    <p>Building a dedicated community of viewers and supporters</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Values Section -->
+                    <div class="about-values">
+                        <h3 class="about-section-title">Our Values</h3>
+                        <div class="values-grid">
+                            <div class="value-item">
+                                <div class="value-icon">✨</div>
+                                <h4>Quality</h4>
+                                <p>We are committed to delivering high-quality content and streaming experiences.</p>
+                            </div>
+                            <div class="value-item">
+                                <div class="value-icon">🌐</div>
+                                <h4>Accessibility</h4>
+                                <p>Making content accessible to viewers worldwide, anytime, anywhere.</p>
+                            </div>
+                            <div class="value-item">
+                                <div class="value-icon">💡</div>
+                                <h4>Innovation</h4>
+                                <p>Continuously improving and innovating to enhance user experience.</p>
+                            </div>
+                            <div class="value-item">
+                                <div class="value-icon">🤝</div>
+                                <h4>Community</h4>
+                                <p>Building and nurturing a strong community of engaged viewers.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonials Section -->
+                    <div class="testimonials-section">
+                        <h3 class="about-section-title">What Viewers Say</h3>
+                        <div class="testimonials-grid">
+                            <div class="testimonial-item">
+                                <div class="testimonial-content">
+                                    <p class="testimonial-text">"RajCreation Live provides excellent streaming quality and a great user experience. I love being able to watch past events too!"</p>
+                                </div>
+                                <div class="testimonial-author">
+                                    <strong>Viewer Name</strong>
+                                    <span>Regular Viewer</span>
+                                </div>
+                            </div>
+                            <div class="testimonial-item">
+                                <div class="testimonial-content">
+                                    <p class="testimonial-text">"The schedule feature is very helpful, and I appreciate being able to set reminders for upcoming events."</p>
+                                </div>
+                                <div class="testimonial-author">
+                                    <strong>Viewer Name</strong>
+                                    <span>Community Member</span>
+                                </div>
+                            </div>
+                            <div class="testimonial-item">
+                                <div class="testimonial-content">
+                                    <p class="testimonial-text">"Great platform for live events! The photo gallery and video archive make it easy to catch up on missed content."</p>
+                                </div>
+                                <div class="testimonial-author">
+                                    <strong>Viewer Name</strong>
+                                    <span>Event Enthusiast</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contact Section -->
+            <section id="contact" class="contact-section">
+                <div class="page-header">
+                    <h2 class="page-title">Contact Us</h2>
+                    <p class="page-description">Get in touch with us. We'd love to hear from you!</p>
+                </div>
+
+                <div class="contact-container">
+                    <!-- Contact Form -->
+                    <div class="contact-form-container">
+                        <h3 class="contact-form-title">Send us a Message</h3>
+                        <form class="contact-form" id="contactForm">
+                            <div class="form-group">
+                                <label for="contactName" class="form-label">Name <span class="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="contactName" 
+                                    name="name" 
+                                    class="form-input" 
+                                    placeholder="Your name"
+                                    required
+                                    aria-required="true">
+                                <span class="form-error" id="nameError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactEmail" class="form-label">Email <span class="required">*</span></label>
+                                <input 
+                                    type="email" 
+                                    id="contactEmail" 
+                                    name="email" 
+                                    class="form-input" 
+                                    placeholder="your.email@example.com"
+                                    required
+                                    aria-required="true">
+                                <span class="form-error" id="emailError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactSubject" class="form-label">Subject <span class="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="contactSubject" 
+                                    name="subject" 
+                                    class="form-input" 
+                                    placeholder="Message subject"
+                                    required
+                                    aria-required="true">
+                                <span class="form-error" id="subjectError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactMessage" class="form-label">Message <span class="required">*</span></label>
+                                <textarea 
+                                    id="contactMessage" 
+                                    name="message" 
+                                    class="form-textarea" 
+                                    rows="6" 
+                                    placeholder="Your message here..."
+                                    required
+                                    aria-required="true"></textarea>
+                                <span class="form-error" id="messageError"></span>
+                            </div>
+
+                            <button type="submit" class="form-submit-btn" id="submitBtn">
+                                <span class="submit-text">Send Message</span>
+                                <span class="submit-loading" style="display: none;">Sending...</span>
+                            </button>
+
+                            <div class="form-success" id="formSuccess" style="display: none;">
+                                <p>✅ Thank you! Your message has been sent successfully. We'll get back to you soon.</p>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="contact-info-container">
+                        <h3 class="contact-info-title">Contact Information</h3>
+                        
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">📧</div>
+                            <div class="contact-info-content">
+                                <h4>Email</h4>
+                                <a href="mailto:contact@rajcreation.com" class="contact-link">contact@rajcreation.com</a>
+                            </div>
+                        </div>
+
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">🌐</div>
+                            <div class="contact-info-content">
+                                <h4>Website</h4>
+                                <a href="https://rajcreation.com" target="_blank" rel="noopener noreferrer" class="contact-link">www.rajcreation.com</a>
+                            </div>
+                        </div>
+
+                        <div class="contact-info-item">
+                            <div class="contact-info-icon">📍</div>
+                            <div class="contact-info-content">
+                                <h4>Location</h4>
+                                <p class="contact-text">Your Location Address<br>City, State, Country</p>
+                            </div>
+                        </div>
+
+                        <!-- Social Media Links -->
+                        <div class="social-media-section">
+                            <h4 class="social-title">Follow Us</h4>
+                            <div class="social-links">
+                                <a href="https://facebook.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Facebook">
+                                    <span class="social-icon">📘</span>
+                                    <span>Facebook</span>
+                                </a>
+                                <a href="https://twitter.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Twitter">
+                                    <span class="social-icon">🐦</span>
+                                    <span>Twitter</span>
+                                </a>
+                                <a href="https://instagram.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
+                                    <span class="social-icon">📷</span>
+                                    <span>Instagram</span>
+                                </a>
+                                <a href="https://youtube.com/rajcreation" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="YouTube">
+                                    <span class="social-icon">▶️</span>
+                                    <span>YouTube</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="faq-section">
+                    <h3 class="faq-title">Frequently Asked Questions</h3>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>How do I watch live streams?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Simply visit our homepage and the live stream will automatically start playing. Make sure you have a stable internet connection for the best viewing experience.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>Can I watch past broadcasts?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Yes! All recorded events are available in the Video section. You can browse, search, and watch any past broadcast at your convenience.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>How do I set reminders for upcoming events?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Visit the Schedule section, find the event you want to be reminded about, and click the "Set Reminder" button. You'll receive a browser notification before the event starts.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>Is the service free to use?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>Yes, RajCreation Live is completely free to use. You can watch live streams and access all recorded content without any charges.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>What timezone are the schedules in?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>All schedules are displayed in IST (Indian Standard Time, UTC+5:30). You can check the timezone information in the Schedule section.</p>
+                            </div>
+                        </div>
+
+                        <div class="faq-item">
+                            <button class="faq-question" aria-expanded="false">
+                                <span>How can I contact support?</span>
+                                <span class="faq-toggle">+</span>
+                            </button>
+                            <div class="faq-answer">
+                                <p>You can reach us through the contact form above, or email us directly at contact@rajcreation.com. We typically respond within 24-48 hours.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3 class="footer-title">RajCreation Live</h3>
+                    <p class="footer-description">Your premier destination for live telecast streaming.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-heading">Connect</h4>
+                    <p class="footer-text">Stay updated with our latest streams and updates.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 RajCreation</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top" title="Back to top">
+        <span>↑</span>
+    </button>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-container">
+            <div class="search-header">
+                <h2>Search</h2>
+                <button class="search-close" id="searchClose" aria-label="Close search">×</button>
+            </div>
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       class="search-input" 
+                       id="searchInput" 
+                       placeholder="Search videos, photos, events..." 
+                       autocomplete="off"
+                       aria-label="Search input">
+                <span class="search-icon">🔍</span>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+    </div>
+
+    <!-- Quick Links Menu -->
+    <div class="quick-links-menu" id="quickLinksMenu">
+        <button class="quick-links-toggle" id="quickLinksToggle" aria-label="Quick links" title="Quick links">
+            <span>⚡</span>
+        </button>
+        <div class="quick-links-content" id="quickLinksContent">
+            <h3>Quick Links</h3>
+            <ul>
+                <li><a href="#video">📹 Recorded Videos</a></li>
+                <li><a href="#photo">📸 Photo Gallery</a></li>
+                <li><a href="#schedule">📅 Schedule</a></li>
+                <li><a href="#about">ℹ️ About</a></li>
+                <li><a href="#contact">✉️ Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+</html>
+
