@@ -669,8 +669,11 @@
         }
         
         // Save video
-        async function saveVideo(event) {
+        async function saveVideo(event, retryCount = 0) {
             event.preventDefault();
+            
+            // Maximum number of retries to prevent infinite recursion
+            const MAX_RETRIES = 3;
             
             // Get thumbnail - the thumbnail input always has the value (either base64 or URL)
             const urlInput = document.getElementById('videoThumbnail');
@@ -740,10 +743,18 @@
                     const errorMsg = error.message || 'Unknown error';
                     showNotification('error', `⚠️ Supabase save failed: ${errorMsg}. Check browser console for details.`);
                     
-                    // Ask user if they want to retry or save to localStorage
-                    if (confirm('Failed to save to Supabase. Would you like to:\n\nOK = Retry saving to Supabase\nCancel = Save to local storage instead')) {
-                        // Retry
-                        return saveVideo(event);
+                    // Check if we've exceeded max retries
+                    if (retryCount >= MAX_RETRIES) {
+                        alert(`⚠️ Maximum retry attempts (${MAX_RETRIES}) reached.\n\nSaving to local storage instead. Please check your Supabase connection and try again later.`);
+                        // Fall through to localStorage save
+                    } else {
+                        // Ask user if they want to retry or save to localStorage
+                        const retryMessage = `Failed to save to Supabase (Attempt ${retryCount + 1}/${MAX_RETRIES}).\n\nWould you like to:\n\nOK = Retry saving to Supabase\nCancel = Save to local storage instead`;
+                        if (confirm(retryMessage)) {
+                            // Retry with incremented counter
+                            return saveVideo(event, retryCount + 1);
+                        }
+                        // User chose to cancel, fall through to localStorage save
                     }
                 }
             } else {

@@ -49,3 +49,5 @@ If you don't see the `videos` table:
 - **Storage (`images` bucket)**: Stores thumbnail image files (binary data)
 - **Both work together**: Storage holds the image file, Database holds the URL to that file
 
+
+
