@@ -1,0 +1,26 @@
+/**
+ * Local Configuration Override
+ * 
+ * Copy this file to config.local.js and update with your values.
+ * Add config.local.js to .gitignore to keep your keys private.
+ * 
+ * This file will override values in js/config.js
+ */
+
+(function() {
+    'use strict';
+
+    window.RAJ_CREATION_CONFIG_LOCAL = {
+        supabase: {
+            url: 'https://tryjfnrlmdbuhljlligi.supabase.co',
+            anonKey: 'your_anon_key_here'
+        },
+        
+        // Override any other config values as needed
+        // site: {
+        //     title: 'My Custom Title'
+        // }
+    };
+
+})();
+

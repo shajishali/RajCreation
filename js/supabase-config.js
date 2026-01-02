@@ -7,9 +7,10 @@
     'use strict';
 
     // Supabase configuration
+    // Load from config.js if available, otherwise use defaults
     const SUPABASE_CONFIG = {
-        url: 'https://tryjfnrlmdbuhljlligi.supabase.co',
-        anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyeWpmbnJsbWRidWhsamxsaWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNDE3ODIsImV4cCI6MjA4MjkxNzc4Mn0.JKQGzW4fOPBPeITeA0zV_5rVZsmVs2SVx5vjfDSt5Sg' // You'll get this in Step 2 below
+        url: (window.RAJ_CREATION_CONFIG && window.RAJ_CREATION_CONFIG.supabase?.url) || 'https://tryjfnrlmdbuhljlligi.supabase.co',
+        anonKey: (window.RAJ_CREATION_CONFIG && window.RAJ_CREATION_CONFIG.supabase?.anonKey) || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyeWpmbnJsbWRidWhsamxsaWdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNDE3ODIsImV4cCI6MjA4MjkxNzc4Mn0.JKQGzW4fOPBPeITeA0zV_5rVZsmVs2SVx5vjfDSt5Sg'
     };
 
     // Initialize Supabase client (will be set when script loads)

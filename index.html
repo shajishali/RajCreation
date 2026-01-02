@@ -362,6 +362,9 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="js/config.js"></script>
+    <!-- Load local config override if it exists (should be in .gitignore) -->
+    <script src="config.local.js" onerror="console.log('config.local.js not found, using defaults')"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-config.js"></script>
     <script src="js/image-storage.js"></script>
