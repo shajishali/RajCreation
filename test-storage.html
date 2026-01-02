@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Storage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #ff6666;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #2d5a2d;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background: #5a2d2d;
+            border: 1px solid #f44336;
+        }
+        .info {
+            background: #2d3d5a;
+            border: 1px solid #2196f3;
+        }
+        h1 {
+            color: #ff4444;
+        }
+        h2 {
+            color: #fff;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Supabase Storage Diagnostic Tool</h1>
+    <p>Use this tool to test if your Supabase Storage is set up correctly.</p>
+
+    <div class="test-section">
+        <h2>1. Check Supabase Connection</h2>
+        <button onclick="testConnection()">Test Connection</button>
+        <div id="connectionResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Check Storage Bucket</h2>
+        <button onclick="testBucket()">Check 'images' Bucket</button>
+        <div id="bucketResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Upload</h2>
+        <input type="file" id="testFile" accept="image/*" style="margin: 10px 0; color: #fff;">
+        <button onclick="testUpload()">Upload Test Image</button>
+        <div id="uploadResult" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. List Files in Storage</h2>
+        <button onclick="listFiles()">List All Files</button>
+        <div id="listResult" class="result" style="display: none;"></div>
+    </div>
+
+    <!-- Supabase Scripts -->
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+
+    <script>
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+
+        async function testConnection() {
+            showResult('connectionResult', 'Testing connection...', 'info');
+            
+            try {
+                if (!window.RajCreationSupabase) {
+                    throw new Error('RajCreationSupabase not loaded');
+                }
+
+                const client = window.RajCreationSupabase.getClient();
+                if (!client) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                // Test by trying to list buckets
+                const { data, error } = await client.storage.listBuckets();
+
+                if (error) {
+                    throw error;
+                }
+
+                showResult('connectionResult', 
+                    `✅ Connection successful!\n\n` +
+                    `Found ${data.length} bucket(s):\n` +
+                    data.map(b => `  - ${b.name} (${b.public ? 'PUBLIC' : 'PRIVATE'})`).join('\n'),
+                    'success'
+                );
+            } catch (error) {
+                showResult('connectionResult', 
+                    `❌ Connection failed!\n\nError: ${error.message}\n\n` +
+                    `Please check:\n` +
+                    `1. Supabase scripts are loaded\n` +
+                    `2. Config in js/config.js is correct\n` +
+                    `3. Browser console for more details`,
+                    'error'
+                );
+            }
+        }
+
+        async function testBucket() {
+            showResult('bucketResult', 'Checking bucket...', 'info');
+            
+            try {
+                const client = window.RajCreationSupabase.getClient();
+                if (!client) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                // Check if bucket exists
+                const { data: buckets, error: listError } = await client.storage.listBuckets();
+                
+                if (listError) {
+                    throw listError;
+                }
+
+                const imagesBucket = buckets.find(b => b.name === 'images');
+
+                if (!imagesBucket) {
+                    showResult('bucketResult', 
+                        `❌ Bucket 'images' not found!\n\n` +
+                        `Please create it:\n` +
+                        `1. Go to Supabase Dashboard → Storage\n` +
+                        `2. Click "+ New bucket"\n` +
+                        `3. Name: "images"\n` +
+                        `4. Toggle "Public bucket" to ON\n` +
+                        `5. Click "Create bucket"`,
+                        'error'
+                    );
+                    return;
+                }
+
+                // Test read access
+                const { data: files, error: readError } = await client.storage
+                    .from('images')
+                    .list('thumbnails', { limit: 1 });
+
+                let readAccess = true;
+                if (readError) {
+                    readAccess = false;
+                }
+
+                // Test write access by trying to upload a small test file
+                const testBlob = new Blob(['test'], { type: 'text/plain' });
+                const { error: writeError } = await client.storage
+                    .from('images')
+                    .upload('test-access-check.txt', testBlob, { upsert: true });
+
+                let writeAccess = true;
+                if (writeError) {
+                    writeAccess = false;
+                } else {
+                    // Clean up test file
+                    await client.storage.from('images').remove(['test-access-check.txt']);
+                }
+
+                showResult('bucketResult', 
+                    `✅ Bucket 'images' found!\n\n` +
+                    `Public: ${imagesBucket.public ? 'Yes ✅' : 'No ❌'}\n` +
+                    `Read Access: ${readAccess ? 'Yes ✅' : 'No ❌'}\n` +
+                    `Write Access: ${writeAccess ? 'Yes ✅' : 'No ❌'}\n\n` +
+                    `${!imagesBucket.public ? '⚠️ Bucket is not PUBLIC! Make it public in Settings.\n' : ''}` +
+                    `${!readAccess ? '⚠️ Read access denied! Check storage policies.\n' : ''}` +
+                    `${!writeAccess ? '⚠️ Write access denied! Run supabase-complete-setup.sql\n' : ''}`,
+                    (imagesBucket.public && readAccess && writeAccess) ? 'success' : 'error'
+                );
+            } catch (error) {
+                showResult('bucketResult', 
+                    `❌ Error checking bucket!\n\nError: ${error.message}\n\n` +
+                    `Please check browser console for details.`,
+                    'error'
+                );
+            }
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('testFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select an image file first!');
+                return;
+            }
+
+            showResult('uploadResult', 'Uploading...', 'info');
+
+            try {
+                const fileName = `test_upload_${Date.now()}.${file.name.split('.').pop()}`;
+                
+                const result = await window.RajCreationSupabase.uploadImage(file, fileName, 'thumbnails');
+
+                showResult('uploadResult', 
+                    `✅ Upload successful!\n\n` +
+                    `File: ${result.path}\n` +
+                    `URL: ${result.url}\n\n` +
+                    `You can now check Supabase Dashboard → Storage → images → thumbnails/`,
+                    'success'
+                );
+
+                // Show image preview
+                const img = document.createElement('img');
+                img.src = result.url;
+                img.style.maxWidth = '300px';
+                img.style.marginTop = '10px';
+                img.style.border = '2px solid #4caf50';
+                img.style.borderRadius = '4px';
+                
+                const resultDiv = document.getElementById('uploadResult');
+                resultDiv.appendChild(img);
+            } catch (error) {
+                showResult('uploadResult', 
+                    `❌ Upload failed!\n\nError: ${error.message}\n\n` +
+                    `Common issues:\n` +
+                    `1. Bucket not found - Create 'images' bucket\n` +
+                    `2. Bucket not public - Make it public in Settings\n` +
+                    `3. Storage policies not set - Run supabase-complete-setup.sql\n` +
+                    `4. File too large - Check file size limit`,
+                    'error'
+                );
+            }
+        }
+
+        async function listFiles() {
+            showResult('listResult', 'Loading files...', 'info');
+
+            try {
+                const client = window.RajCreationSupabase.getClient();
+                if (!client) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const { data: files, error } = await client.storage
+                    .from('images')
+                    .list('thumbnails', {
+                        limit: 100,
+                        sortBy: { column: 'created_at', order: 'desc' }
+                    });
+
+                if (error) {
+                    throw error;
+                }
+
+                if (files.length === 0) {
+                    showResult('listResult', 
+                        `📁 No files found in thumbnails/ folder\n\n` +
+                        `This is normal if you haven't uploaded any thumbnails yet.\n` +
+                        `Try uploading a video with a thumbnail image.`,
+                        'info'
+                    );
+                    return;
+                }
+
+                let fileList = `✅ Found ${files.length} file(s):\n\n`;
+                files.forEach((file, index) => {
+                    const sizeKB = (file.metadata?.size / 1024).toFixed(2);
+                    fileList += `${index + 1}. ${file.name}\n`;
+                    fileList += `   Size: ${sizeKB} KB\n`;
+                    fileList += `   Created: ${new Date(file.created_at).toLocaleString()}\n\n`;
+                });
+
+                showResult('listResult', fileList, 'success');
+            } catch (error) {
+                showResult('listResult', 
+                    `❌ Error listing files!\n\nError: ${error.message}\n\n` +
+                    `Please check:\n` +
+                    `1. Bucket 'images' exists\n` +
+                    `2. Storage policies are set up`,
+                    'error'
+                );
+            }
+        }
+
+        // Auto-run connection test on load
+        window.addEventListener('load', () => {
+            setTimeout(testConnection, 500);
+        });
+    </script>
+</body>
+</html>
+
