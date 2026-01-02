@@ -294,6 +294,115 @@
         }
     }
 
+    /**
+     * Save Video to Database and Storage
+     */
+    async function saveVideo(videoData) {
+        const client = getClient();
+        if (!client) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        try {
+            let thumbnailUrl = videoData.thumbnail_url || videoData.thumbnail;
+            
+            // If thumbnail is base64, upload it to Supabase Storage
+            if (thumbnailUrl && thumbnailUrl.startsWith('data:image')) {
+                try {
+                    // Convert base64 to blob
+                    const base64Data = thumbnailUrl.split(',')[1] || thumbnailUrl;
+                    const mimeType = thumbnailUrl.match(/data:image\/([^;]+)/)?.[1] || 'jpg';
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: `image/${mimeType}` });
+                    
+                    const fileName = `video_thumbnail_${Date.now()}.${mimeType}`;
+                    
+                    // Upload to Supabase Storage
+                    const uploadResult = await uploadImage(blob, fileName, 'thumbnails');
+                    thumbnailUrl = uploadResult.url;
+                } catch (uploadError) {
+                    console.error('Error uploading thumbnail:', uploadError);
+                    // Continue with base64 URL if upload fails
+                }
+            }
+            
+            // Save to database
+            const { data, error } = await client
+                .from('videos')
+                .upsert({
+                    id: videoData.id || undefined,
+                    title: videoData.title,
+                    thumbnail_url: thumbnailUrl,
+                    duration: videoData.duration || null,
+                    date: videoData.date || null,
+                    views: videoData.views || null,
+                    embed_link: videoData.embed_link || videoData.embedLink,
+                    display_order: videoData.display_order || 0,
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'id'
+                });
+
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            console.error('Error saving video:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get All Videos
+     */
+    async function getVideos() {
+        const client = getClient();
+        if (!client) {
+            return [];
+        }
+
+        try {
+            const { data, error } = await client
+                .from('videos')
+                .select('*')
+                .order('display_order', { ascending: true })
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error getting videos:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Delete Video
+     */
+    async function deleteVideo(videoId) {
+        const client = getClient();
+        if (!client) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        try {
+            const { error } = await client
+                .from('videos')
+                .delete()
+                .eq('id', videoId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting video:', error);
+            throw error;
+        }
+    }
+
     // Initialize when loaded
     // Note: Supabase script must be loaded first
     if (typeof supabase !== 'undefined') {
@@ -313,6 +422,9 @@
         savePhoto: savePhoto,
         getPhotos: getPhotos,
         deletePhoto: deletePhoto,
+        saveVideo: saveVideo,
+        getVideos: getVideos,
+        deleteVideo: deleteVideo,
         config: SUPABASE_CONFIG
     };
 

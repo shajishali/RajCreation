@@ -396,8 +396,37 @@
     </div>
 
     <script>
-        // Load videos from localStorage
-        function loadVideos() {
+        // Load videos from Supabase (with localStorage fallback)
+        async function loadVideos() {
+            const grid = document.getElementById('videoGrid');
+            
+            // Try to load from Supabase first
+            if (window.RajCreationSupabase && typeof window.RajCreationSupabase.getVideos === 'function') {
+                try {
+                    const videos = await window.RajCreationSupabase.getVideos();
+                    
+                    if (videos.length === 0) {
+                        // Fallback to localStorage
+                        loadVideosFromLocalStorage();
+                        return;
+                    }
+                    
+                    displayVideos(videos);
+                    return;
+                } catch (error) {
+                    console.error('Error loading videos from Supabase:', error);
+                    // Fallback to localStorage
+                    loadVideosFromLocalStorage();
+                    return;
+                }
+            }
+            
+            // Fallback to localStorage
+            loadVideosFromLocalStorage();
+        }
+        
+        // Load videos from localStorage (fallback)
+        function loadVideosFromLocalStorage() {
             const grid = document.getElementById('videoGrid');
             const videosJson = localStorage.getItem('recordedVideosList');
             const videos = videosJson ? JSON.parse(videosJson) : [];
@@ -413,23 +442,47 @@
                 return;
             }
             
+            displayVideos(videos);
+        }
+        
+        // Display videos in grid
+        function displayVideos(videos) {
+            const grid = document.getElementById('videoGrid');
+            
+            if (videos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">📹</div>
+                        <h2 style="color: #fff; margin-bottom: 0.5rem;">No Videos Yet</h2>
+                        <p>Click "Add New Video" to create your first video card</p>
+                    </div>
+                `;
+                return;
+            }
+            
             let html = '';
             videos.forEach((video, index) => {
+                const thumbnail = video.thumbnail_url || video.thumbnail || '';
+                const duration = video.duration || '';
+                const date = video.date || '';
+                const views = video.views || '';
+                const videoId = video.id || index;
+                
                 html += `
                     <div class="video-card">
                         <div class="video-thumbnail">
-                            <img src="${video.thumbnail}" alt="${video.title}">
-                            <div class="duration-badge">${video.duration}</div>
+                            <img src="${thumbnail}" alt="${video.title}">
+                            ${duration ? `<div class="duration-badge">${duration}</div>` : ''}
                         </div>
                         <div class="video-info">
                             <h3 class="video-title">${video.title}</h3>
                             <div class="video-meta">
-                                <span>📅 ${video.date}</span>
-                                <span>👁 ${video.views}</span>
+                                ${date ? `<span>📅 ${date}</span>` : ''}
+                                ${views ? `<span>👁 ${views}</span>` : ''}
                             </div>
                             <div class="video-actions">
-                                <button class="btn-small btn-edit" onclick="editVideo(${index})">✏️ Edit</button>
-                                <button class="btn-small btn-delete" onclick="deleteVideo(${index})">🗑️ Delete</button>
+                                <button class="btn-small btn-edit" onclick="editVideo(${videoId}, ${index})">✏️ Edit</button>
+                                <button class="btn-small btn-delete" onclick="deleteVideo(${videoId}, ${index})">🗑️ Delete</button>
                             </div>
                         </div>
                     </div>
@@ -549,23 +602,38 @@
         }
         
         // Edit video
-        function editVideo(index) {
-            const videosJson = localStorage.getItem('recordedVideosList');
-            const videos = videosJson ? JSON.parse(videosJson) : [];
-            const video = videos[index];
+        async function editVideo(videoId, index) {
+            let video = null;
+            
+            // Try to load from Supabase first
+            if (window.RajCreationSupabase && typeof window.RajCreationSupabase.getVideos === 'function' && videoId && videoId !== 'undefined' && !isNaN(videoId)) {
+                try {
+                    const videos = await window.RajCreationSupabase.getVideos();
+                    video = videos.find(v => v.id == videoId);
+                } catch (error) {
+                    console.error('Error loading video from Supabase:', error);
+                }
+            }
+            
+            // Fallback to localStorage
+            if (!video) {
+                const videosJson = localStorage.getItem('recordedVideosList');
+                const videos = videosJson ? JSON.parse(videosJson) : [];
+                video = videos[index];
+            }
             
             if (!video) return;
             
             document.getElementById('modalTitle').textContent = 'Edit Video';
-            document.getElementById('videoIndex').value = index;
+            document.getElementById('videoIndex').value = (videoId && videoId !== 'undefined' && !isNaN(videoId)) ? videoId : index;
             document.getElementById('videoTitle').value = video.title;
-            document.getElementById('videoDuration').value = video.duration;
-            document.getElementById('videoDate').value = video.date;
-            document.getElementById('videoViews').value = video.views;
-            document.getElementById('videoEmbed').value = video.embedLink;
+            document.getElementById('videoDuration').value = video.duration || '';
+            document.getElementById('videoDate').value = video.date || '';
+            document.getElementById('videoViews').value = video.views || '';
+            document.getElementById('videoEmbed').value = video.embed_link || video.embedLink || '';
             
             // Handle thumbnail - check if it's base64 or URL
-            const thumbnailValue = video.thumbnail || '';
+            const thumbnailValue = video.thumbnail_url || video.thumbnail || '';
             if (thumbnailValue.startsWith('data:image')) {
                 // Base64 image
                 document.getElementById('videoThumbnail').value = thumbnailValue;
@@ -601,7 +669,7 @@
         }
         
         // Save video
-        function saveVideo(event) {
+        async function saveVideo(event) {
             event.preventDefault();
             
             // Get thumbnail - the thumbnail input always has the value (either base64 or URL)
@@ -610,40 +678,85 @@
             
             // If no thumbnail, try to preserve existing one when editing
             if (!thumbnail) {
-                const index = document.getElementById('videoIndex').value;
-                if (index !== '') {
-                    const videosJson = localStorage.getItem('recordedVideosList');
-                    const videos = videosJson ? JSON.parse(videosJson) : [];
-                    if (videos[index] && videos[index].thumbnail) {
-                        thumbnail = videos[index].thumbnail;
+                const videoId = document.getElementById('videoIndex').value;
+                if (videoId !== '') {
+                    // Try to get from Supabase
+                    if (window.RajCreationSupabase && typeof window.RajCreationSupabase.getVideos === 'function') {
+                        try {
+                            const videos = await window.RajCreationSupabase.getVideos();
+                            const existingVideo = videos.find(v => v.id == videoId);
+                            if (existingVideo && existingVideo.thumbnail_url) {
+                                thumbnail = existingVideo.thumbnail_url;
+                            }
+                        } catch (e) {
+                            console.error('Error loading existing video:', e);
+                        }
+                    }
+                    
+                    // Fallback to localStorage
+                    if (!thumbnail) {
+                        const videosJson = localStorage.getItem('recordedVideosList');
+                        const videos = videosJson ? JSON.parse(videosJson) : [];
+                        const index = parseInt(videoId);
+                        if (videos[index] && videos[index].thumbnail) {
+                            thumbnail = videos[index].thumbnail;
+                        }
                     }
                 }
             }
             
             if (!thumbnail) {
                 alert('Please upload a thumbnail image or enter a URL!');
-                    return;
-                }
-                
-            const index = document.getElementById('videoIndex').value;
-            const video = {
+                return;
+            }
+            
+            const videoId = document.getElementById('videoIndex').value;
+            const videoData = {
+                id: videoId && !isNaN(videoId) ? parseInt(videoId) : undefined,
                 title: document.getElementById('videoTitle').value.trim(),
                 thumbnail: thumbnail,
+                thumbnail_url: thumbnail,
                 duration: document.getElementById('videoDuration').value.trim(),
                 date: document.getElementById('videoDate').value.trim(),
                 views: document.getElementById('videoViews').value.trim(),
+                embed_link: document.getElementById('videoEmbed').value.trim(),
                 embedLink: document.getElementById('videoEmbed').value.trim()
             };
             
+            // Try to save to Supabase first
+            if (window.RajCreationSupabase && typeof window.RajCreationSupabase.saveVideo === 'function') {
+                try {
+                    showNotification('info', '⏳ Saving video to Supabase...');
+                    await window.RajCreationSupabase.saveVideo(videoData);
+                    showNotification('success', '✅ Video saved to Supabase! It will be visible on all devices.');
+                    closeModal();
+                    await loadVideos();
+                    return;
+                } catch (error) {
+                    console.error('Error saving to Supabase:', error);
+                    showNotification('warning', '⚠️ Supabase save failed, saving to local storage instead.');
+                }
+            }
+            
+            // Fallback to localStorage
             const videosJson = localStorage.getItem('recordedVideosList');
             let videos = videosJson ? JSON.parse(videosJson) : [];
             
-            if (index === '') {
+            const video = {
+                title: videoData.title,
+                thumbnail: videoData.thumbnail,
+                duration: videoData.duration,
+                date: videoData.date,
+                views: videoData.views,
+                embedLink: videoData.embed_link
+            };
+            
+            if (videoId === '' || isNaN(videoId)) {
                 // Add new video
                 videos.push(video);
             } else {
                 // Update existing video
-                videos[parseInt(index)] = video;
+                videos[parseInt(videoId)] = video;
             }
             
             localStorage.setItem('recordedVideosList', JSON.stringify(videos));
@@ -654,12 +767,66 @@
             alert('✅ Video saved successfully!');
         }
         
+        // Show notification
+        function showNotification(type, message) {
+            // Create or update notification element
+            let notification = document.getElementById('notification');
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 1rem 1.5rem;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 600;
+                    z-index: 10000;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    transition: all 0.3s ease;
+                `;
+                document.body.appendChild(notification);
+            }
+            
+            const colors = {
+                success: '#4caf50',
+                error: '#f44336',
+                warning: '#ff9800',
+                info: '#2196f3'
+            };
+            
+            notification.style.background = colors[type] || colors.info;
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
         // Delete video
-        function deleteVideo(index) {
+        async function deleteVideo(videoId, index) {
             if (!confirm('Are you sure you want to delete this video?')) {
                 return;
             }
             
+            // Try to delete from Supabase first
+            if (window.RajCreationSupabase && typeof window.RajCreationSupabase.deleteVideo === 'function' && videoId && videoId !== 'undefined' && !isNaN(videoId)) {
+                try {
+                    showNotification('info', '⏳ Deleting video from Supabase...');
+                    await window.RajCreationSupabase.deleteVideo(parseInt(videoId));
+                    showNotification('success', '✅ Video deleted from Supabase!');
+                    await loadVideos();
+                    return;
+                } catch (error) {
+                    console.error('Error deleting from Supabase:', error);
+                    showNotification('warning', '⚠️ Supabase delete failed, deleting from local storage instead.');
+                }
+            }
+            
+            // Fallback to localStorage
             const videosJson = localStorage.getItem('recordedVideosList');
             let videos = videosJson ? JSON.parse(videosJson) : [];
             
@@ -681,7 +848,10 @@
         }
         
         // Load videos on page load
-        document.addEventListener('DOMContentLoaded', loadVideos);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Supabase to initialize
+            setTimeout(loadVideos, 500);
+        });
         
         // Close modal on escape key
         document.addEventListener('keydown', function(e) {
@@ -690,5 +860,10 @@
             }
         });
     </script>
+    
+    <!-- Supabase Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/supabase-config.js"></script>
 </body>
 </html>
