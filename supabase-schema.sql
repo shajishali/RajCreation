@@ -117,6 +117,12 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Drop existing triggers if they exist (for re-running schema)
+DROP TRIGGER IF EXISTS update_thumbnails_updated_at ON thumbnails;
+DROP TRIGGER IF EXISTS update_videos_updated_at ON videos;
+DROP TRIGGER IF EXISTS update_photos_updated_at ON photos;
+DROP TRIGGER IF EXISTS update_settings_updated_at ON settings;
+
 -- Apply trigger to tables with updated_at
 CREATE TRIGGER update_thumbnails_updated_at BEFORE UPDATE ON thumbnails
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -139,6 +145,16 @@ ALTER TABLE thumbnails ENABLE ROW LEVEL SECURITY;
 ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist (for re-running schema)
+DROP POLICY IF EXISTS "Allow public read access for thumbnails" ON thumbnails;
+DROP POLICY IF EXISTS "Allow public write access for thumbnails" ON thumbnails;
+DROP POLICY IF EXISTS "Allow public read access for videos" ON videos;
+DROP POLICY IF EXISTS "Allow public write access for videos" ON videos;
+DROP POLICY IF EXISTS "Allow public read access for photos" ON photos;
+DROP POLICY IF EXISTS "Allow public write access for photos" ON photos;
+DROP POLICY IF EXISTS "Allow public read access for settings" ON settings;
+DROP POLICY IF EXISTS "Allow public write access for settings" ON settings;
 
 -- ============================================
 -- THUMBNAILS POLICIES
