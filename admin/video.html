@@ -727,15 +727,27 @@
             if (window.RajCreationSupabase && typeof window.RajCreationSupabase.saveVideo === 'function') {
                 try {
                     showNotification('info', '⏳ Saving video to Supabase...');
-                    await window.RajCreationSupabase.saveVideo(videoData);
+                    console.log('💾 Saving video data:', videoData);
+                    const result = await window.RajCreationSupabase.saveVideo(videoData);
+                    console.log('✅ Video saved successfully:', result);
                     showNotification('success', '✅ Video saved to Supabase! It will be visible on all devices.');
                     closeModal();
                     await loadVideos();
                     return;
                 } catch (error) {
-                    console.error('Error saving to Supabase:', error);
-                    showNotification('warning', '⚠️ Supabase save failed, saving to local storage instead.');
+                    console.error('❌ Error saving to Supabase:', error);
+                    console.error('Error details:', error.message);
+                    const errorMsg = error.message || 'Unknown error';
+                    showNotification('error', `⚠️ Supabase save failed: ${errorMsg}. Check browser console for details.`);
+                    
+                    // Ask user if they want to retry or save to localStorage
+                    if (confirm('Failed to save to Supabase. Would you like to:\n\nOK = Retry saving to Supabase\nCancel = Save to local storage instead')) {
+                        // Retry
+                        return saveVideo(event);
+                    }
                 }
+            } else {
+                console.warn('⚠️ Supabase functions not available, saving to localStorage');
             }
             
             // Fallback to localStorage

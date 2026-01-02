@@ -56,6 +56,8 @@
         try {
             // Upload file to Supabase Storage
             const filePath = `${folder}/${fileName}`;
+            console.log('📤 Uploading to Supabase Storage:', filePath);
+            
             const { data, error } = await client.storage
                 .from('images')
                 .upload(filePath, file, {
@@ -64,14 +66,30 @@
                 });
 
             if (error) {
-                console.error('Upload error:', error);
+                console.error('❌ Storage upload error:', error);
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                
+                // Check if it's a bucket not found error
+                if (error.message && error.message.includes('Bucket not found')) {
+                    throw new Error('Storage bucket "images" not found. Please create it in Supabase Dashboard → Storage → New bucket (name: "images", make it PUBLIC)');
+                }
+                
+                // Check if it's a permission error
+                if (error.message && (error.message.includes('permission') || error.message.includes('policy'))) {
+                    throw new Error('Storage permission denied. Please run supabase-complete-setup.sql to set up storage policies.');
+                }
+                
                 throw error;
             }
+
+            console.log('✅ File uploaded successfully:', data);
 
             // Get public URL
             const { data: urlData } = client.storage
                 .from('images')
                 .getPublicUrl(filePath);
+
+            console.log('✅ Public URL generated:', urlData.publicUrl);
 
             return {
                 success: true,
@@ -79,7 +97,8 @@
                 url: urlData.publicUrl
             };
         } catch (error) {
-            console.error('Error uploading image:', error);
+            console.error('❌ Error uploading image to Supabase Storage:', error);
+            console.error('Error message:', error.message);
             throw error;
         }
     }
@@ -309,6 +328,8 @@
             // If thumbnail is base64, upload it to Supabase Storage
             if (thumbnailUrl && thumbnailUrl.startsWith('data:image')) {
                 try {
+                    console.log('📸 Detected base64 thumbnail, uploading to Supabase Storage...');
+                    
                     // Convert base64 to blob
                     const base64Data = thumbnailUrl.split(',')[1] || thumbnailUrl;
                     const mimeType = thumbnailUrl.match(/data:image\/([^;]+)/)?.[1] || 'jpg';
@@ -321,14 +342,27 @@
                     const blob = new Blob([byteArray], { type: `image/${mimeType}` });
                     
                     const fileName = `video_thumbnail_${Date.now()}.${mimeType}`;
+                    console.log('📤 Uploading thumbnail:', fileName, 'Size:', blob.size, 'bytes');
                     
                     // Upload to Supabase Storage
                     const uploadResult = await uploadImage(blob, fileName, 'thumbnails');
                     thumbnailUrl = uploadResult.url;
+                    console.log('✅ Thumbnail uploaded successfully to:', thumbnailUrl);
                 } catch (uploadError) {
-                    console.error('Error uploading thumbnail:', uploadError);
-                    // Continue with base64 URL if upload fails
+                    console.error('❌ Error uploading thumbnail to Supabase Storage:', uploadError);
+                    console.error('Error details:', uploadError.message);
+                    
+                    // Show user-friendly error message
+                    const errorMsg = uploadError.message || 'Failed to upload thumbnail to storage';
+                    alert(`⚠️ Thumbnail upload failed: ${errorMsg}\n\nThe video will be saved with the base64 image, but it won't be stored in Supabase Storage.\n\nPlease check:\n1. Storage bucket "images" exists and is PUBLIC\n2. Storage policies are set up (run supabase-complete-setup.sql)`);
+                    
+                    // Continue with base64 URL if upload fails (don't throw, just log)
+                    console.warn('⚠️ Continuing with base64 thumbnail URL (not stored in Supabase Storage)');
                 }
+            } else if (thumbnailUrl && !thumbnailUrl.startsWith('http')) {
+                console.warn('⚠️ Thumbnail URL is not base64 or HTTP URL:', thumbnailUrl);
+            } else if (thumbnailUrl && thumbnailUrl.startsWith('http')) {
+                console.log('✅ Using external thumbnail URL (not uploading to storage):', thumbnailUrl);
             }
             
             // Save to database
