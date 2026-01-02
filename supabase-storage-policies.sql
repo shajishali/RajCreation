@@ -6,6 +6,12 @@
 -- Then run this SQL to set up policies
 -- ============================================
 
+-- Drop existing policies if they exist (for re-running)
+DROP POLICY IF EXISTS "Allow public read access to images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public uploads to images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public updates to images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow public deletes from images" ON storage.objects;
+
 -- ============================================
 -- POLICY 1: Public Read Access
 -- ============================================
