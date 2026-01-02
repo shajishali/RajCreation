@@ -26,10 +26,32 @@
         }
 
         try {
-            supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+            // Create Supabase client with proper configuration for storage uploads
+            supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
+                auth: {
+                    persistSession: false,
+                    autoRefreshToken: false
+                },
+                global: {
+                    headers: {
+                        'x-client-info': 'rajcreation-live'
+                    }
+                },
+                // Ensure proper handling of storage requests
+                db: {
+                    schema: 'public'
+                },
+                storage: {
+                    // Retry configuration for network errors
+                    retryAttempts: 3,
+                    retryDelay: 1000
+                }
+            });
+            
+            console.log('✅ Supabase client initialized:', SUPABASE_CONFIG.url);
             return true;
         } catch (error) {
-            console.error('Error initializing Supabase:', error);
+            console.error('❌ Error initializing Supabase:', error);
             return false;
         }
     }
@@ -57,32 +79,116 @@
             // Upload file to Supabase Storage
             const filePath = `${folder}/${fileName}`;
             console.log('📤 Uploading to Supabase Storage:', filePath);
+            console.log('📤 File details:', {
+                name: fileName,
+                size: file.size,
+                type: file.type,
+                folder: folder
+            });
+            console.log('📤 Supabase URL:', SUPABASE_CONFIG.url);
             
-            const { data, error } = await client.storage
-                .from('images')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
+            // Validate file before upload
+            if (!file || file.size === 0) {
+                throw new Error('File is empty or invalid');
+            }
+            
+            if (file.size > 50 * 1024 * 1024) { // 50MB limit
+                throw new Error('File size exceeds 50MB limit');
+            }
 
-            if (error) {
-                console.error('❌ Storage upload error:', error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
+            // Upload with retry logic
+            let uploadError = null;
+            let uploadData = null;
+            const maxRetries = 3;
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    console.log(`📤 Upload attempt ${attempt}/${maxRetries}...`);
+                    
+                    const { data, error } = await client.storage
+                        .from('images')
+                        .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: true,
+                            contentType: file.type || 'image/jpeg'
+                        });
+
+                    if (error) {
+                        uploadError = error;
+                        console.error(`❌ Upload attempt ${attempt} failed:`, error);
+                        
+                        // Don't retry on certain errors
+                        if (error.message && (
+                            error.message.includes('Bucket not found') ||
+                            error.message.includes('permission') ||
+                            error.message.includes('policy') ||
+                            error.message.includes('already exists')
+                        )) {
+                            break; // Don't retry, these are configuration issues
+                        }
+                        
+                        // Wait before retry (exponential backoff)
+                        if (attempt < maxRetries) {
+                            const delay = attempt * 1000; // 1s, 2s, 3s
+                            console.log(`⏳ Waiting ${delay}ms before retry...`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                        }
+                    } else {
+                        uploadData = data;
+                        uploadError = null;
+                        break; // Success, exit retry loop
+                    }
+                } catch (networkError) {
+                    uploadError = networkError;
+                    console.error(`❌ Network error on attempt ${attempt}:`, networkError);
+                    
+                    // Check if it's a network/CORS error
+                    if (networkError.message && (
+                        networkError.message.includes('NetworkError') ||
+                        networkError.message.includes('Failed to fetch') ||
+                        networkError.message.includes('CORS')
+                    )) {
+                        // Provide helpful error message
+                        throw new Error(
+                            'Network error: Unable to connect to Supabase Storage. ' +
+                            'This could be due to:\n' +
+                            '1. CORS configuration issue\n' +
+                            '2. Network connectivity problem\n' +
+                            '3. Supabase service temporarily unavailable\n\n' +
+                            'Please check:\n' +
+                            '- Your internet connection\n' +
+                            '- Supabase Dashboard → Settings → API → CORS settings\n' +
+                            '- Browser console for detailed error messages'
+                        );
+                    }
+                    
+                    // Wait before retry
+                    if (attempt < maxRetries) {
+                        const delay = attempt * 1000;
+                        console.log(`⏳ Waiting ${delay}ms before retry...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+
+            if (uploadError) {
+                console.error('❌ Storage upload error after retries:', uploadError);
+                console.error('Error details:', JSON.stringify(uploadError, null, 2));
                 
                 // Check if it's a bucket not found error
-                if (error.message && error.message.includes('Bucket not found')) {
+                if (uploadError.message && uploadError.message.includes('Bucket not found')) {
                     throw new Error('Storage bucket "images" not found. Please create it in Supabase Dashboard → Storage → New bucket (name: "images", make it PUBLIC)');
                 }
                 
                 // Check if it's a permission error
-                if (error.message && (error.message.includes('permission') || error.message.includes('policy'))) {
+                if (uploadError.message && (uploadError.message.includes('permission') || uploadError.message.includes('policy'))) {
                     throw new Error('Storage permission denied. Please run supabase-complete-setup.sql to set up storage policies.');
                 }
                 
-                throw error;
+                throw uploadError;
             }
 
-            console.log('✅ File uploaded successfully:', data);
+            console.log('✅ File uploaded successfully:', uploadData);
 
             // Get public URL
             const { data: urlData } = client.storage
@@ -99,6 +205,7 @@
         } catch (error) {
             console.error('❌ Error uploading image to Supabase Storage:', error);
             console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
             throw error;
         }
     }
