@@ -467,8 +467,17 @@
     async function loadThumbnailPreview() {
         let thumbnailData = null;
         
-        // Try new image storage system first
-        if (window.RajCreationImages) {
+        // Try Supabase first (for cross-device access)
+        if (window.RajCreationSupabase && window.RajCreationSupabase.getThumbnail) {
+            try {
+                thumbnailData = await window.RajCreationSupabase.getThumbnail('live');
+            } catch (e) {
+                console.log('Supabase thumbnail not found, trying local storage');
+            }
+        }
+        
+        // Try image storage system (local files)
+        if (!thumbnailData && window.RajCreationImages) {
             thumbnailData = await window.RajCreationImages.getThumbnail('live');
         }
         
@@ -506,12 +515,66 @@
         const file = fileInput.files[0];
         
         if (file) {
+            const fileName = `thumbnail_live_${Date.now()}.${file.name.split('.').pop()}`;
+            
+            try {
+                // Try to save to Supabase first (if available)
+                if (window.RajCreationSupabase && window.RajCreationSupabase.uploadImage) {
+                    showNotification('info', '⏳ Uploading thumbnail to Supabase...');
+                    
+                    // Upload file to Supabase Storage
+                    const uploadResult = await window.RajCreationSupabase.uploadImage(file, fileName, 'thumbnails');
+                    
+                    // Save thumbnail metadata to database
+                    await window.RajCreationSupabase.saveThumbnail(fileName, uploadResult.url, 'live');
+                    
+                    // Also save base64 to localStorage for immediate display
+                    const reader = new FileReader();
+                    reader.onload = async function(event) {
+                        const thumbnailData = event.target.result;
+                        
+                        // Save to image storage system (for backward compatibility)
+                        if (window.RajCreationImages) {
+                            await window.RajCreationImages.saveThumbnail(thumbnailData, 'live', fileName);
+                        }
+                        
+                        // Save to websiteSettings for main.js compatibility
+                        const settingsData = localStorage.getItem('websiteSettings');
+                        let settings = {};
+                        if (settingsData) {
+                            try {
+                                settings = JSON.parse(settingsData);
+                            } catch (e) {
+                                settings = {};
+                            }
+                        }
+                        settings.thumbnail = uploadResult.url; // Use Supabase URL instead of base64
+                        localStorage.setItem('websiteSettings', JSON.stringify(settings));
+                        localStorage.setItem('liveThumbnail', uploadResult.url);
+                        
+                        // Apply thumbnail immediately if on index page
+                        if (window.RajCreationLive && typeof window.RajCreationLive.applyThumbnail === 'function') {
+                            window.RajCreationLive.applyThumbnail(uploadResult.url);
+                        }
+                        
+                        showNotification('success', '✅ Thumbnail saved to Supabase! It will be visible on all devices.');
+                        closeModal('thumbnailEditModal');
+                        setTimeout(() => location.reload(), 500);
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            } catch (error) {
+                console.error('Supabase upload error:', error);
+                showNotification('warning', '⚠️ Supabase upload failed, saving to local storage instead.');
+            }
+            
+            // Fallback to localStorage if Supabase is not available
             const reader = new FileReader();
             reader.onload = async function(event) {
                 const thumbnailData = event.target.result;
-                const fileName = `thumbnail_live_${Date.now()}.${file.name.split('.').pop()}`;
                 
-                // Save using new image storage system (stores to images folder structure)
+                // Save using image storage system
                 if (window.RajCreationImages) {
                     await window.RajCreationImages.saveThumbnail(thumbnailData, 'live', fileName);
                     
@@ -527,11 +590,16 @@
                 
                 // Also save to websiteSettings object (for main.js compatibility)
                 const settingsData = localStorage.getItem('websiteSettings');
-                let settings = settingsData ? JSON.parse(settingsData) : {};
+                let settings = {};
+                if (settingsData) {
+                    try {
+                        settings = JSON.parse(settingsData);
+                    } catch (e) {
+                        settings = {};
+                    }
+                }
                 settings.thumbnail = thumbnailData;
                 localStorage.setItem('websiteSettings', JSON.stringify(settings));
-                
-                // Also save to old key for backward compatibility
                 localStorage.setItem('liveThumbnail', thumbnailData);
                 
                 // Apply thumbnail immediately if on index page
@@ -539,18 +607,8 @@
                     window.RajCreationLive.applyThumbnail(thumbnailData);
                 }
                 
-                showNotification('success', '✅ Thumbnail saved! Files are downloading. After placing them in the images folder and committing to Git, it will be visible on all devices.');
+                showNotification('success', '✅ Thumbnail saved locally! Files are downloading. For cross-device access, use Supabase.');
                 closeModal('thumbnailEditModal');
-                
-                // Don't reload immediately - let user see the notification
-                setTimeout(() => {
-                    // Show reminder about files
-                    setTimeout(() => {
-                        showNotification('info', '💡 Remember: Place the downloaded files in the images folder and commit to Git for cross-device access.');
-                    }, 2000);
-                }, 1000);
-                
-                // Reload page to show thumbnail (with delay to ensure save completed)
                 setTimeout(() => location.reload(), 500);
             };
             reader.readAsDataURL(file);
