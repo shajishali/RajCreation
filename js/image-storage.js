@@ -52,18 +52,45 @@
         // Load manifest from images folder first (for cross-device access)
         await loadManifest();
         
-        // Check manifest from images folder first (this works on all devices)
-        if (imageManifest.thumbnails[type] && imageManifest.thumbnails[type].data) {
-            return imageManifest.thumbnails[type].data;
+        // Check manifest from images folder
+        if (imageManifest.thumbnails[type]) {
+            const thumbnail = imageManifest.thumbnails[type];
+            
+            // Priority 1: If manifest has base64 data, use it (file not yet on server)
+            // This handles the case when thumbnail was just saved but file not committed to git yet
+            if (thumbnail.data) {
+                return thumbnail.data;
+            }
+            
+            // Priority 2: If manifest has fileName but no data, try to load from file path
+            // This handles the case when file exists on server (committed to git)
+            if (thumbnail.fileName) {
+                const fileName = thumbnail.fileName;
+                const path = window.location.pathname.includes('/admin/') ? `../images/${fileName}` : `images/${fileName}`;
+                
+                // Try to verify file exists by attempting to load it
+                // If file doesn't exist, fall through to localStorage
+                try {
+                    const response = await fetch(path, { method: 'HEAD' });
+                    if (response.ok) {
+                        return path;
+                    }
+                } catch (e) {
+                    // File doesn't exist, fall through to localStorage
+                }
+            }
         }
         
         // Fallback to localStorage (device-specific, works immediately on current device)
+        // This contains base64 data for immediate display
         const settingsData = localStorage.getItem('websiteSettings');
         if (settingsData) {
             try {
                 const settings = JSON.parse(settingsData);
                 if (settings.thumbnail) return settings.thumbnail;
-            } catch (e) {}
+            } catch (e) {
+                // Invalid JSON, continue to next fallback
+            }
         }
         
         return localStorage.getItem('liveThumbnail');
@@ -90,7 +117,16 @@
         
         // Also save to websiteSettings for backward compatibility
         const settingsData = localStorage.getItem('websiteSettings');
-        let settings = settingsData ? JSON.parse(settingsData) : {};
+        let settings = {};
+        if (settingsData) {
+            try {
+                settings = JSON.parse(settingsData);
+            } catch (e) {
+                // Invalid JSON, start with empty object
+                console.warn('Corrupted websiteSettings JSON, resetting:', e);
+                settings = {};
+            }
+        }
         settings.thumbnail = data;
         localStorage.setItem('websiteSettings', JSON.stringify(settings));
         
@@ -110,9 +146,15 @@
         // Also remove from websiteSettings
         const settingsData = localStorage.getItem('websiteSettings');
         if (settingsData) {
-            let settings = JSON.parse(settingsData);
-            delete settings.thumbnail;
-            localStorage.setItem('websiteSettings', JSON.stringify(settings));
+            try {
+                let settings = JSON.parse(settingsData);
+                delete settings.thumbnail;
+                localStorage.setItem('websiteSettings', JSON.stringify(settings));
+            } catch (e) {
+                // Invalid JSON, clear the corrupted data
+                console.warn('Corrupted websiteSettings JSON, clearing:', e);
+                localStorage.removeItem('websiteSettings');
+            }
         }
         
         localStorage.removeItem('liveThumbnail');
@@ -132,10 +174,36 @@
 
     /**
      * Export Manifest JSON (for downloading to images folder)
+     * Creates manifest with file paths only (no base64 data)
      */
     async function exportManifest() {
         await loadManifest();
-        const jsonString = JSON.stringify(imageManifest, null, 2);
+        
+        // Create export manifest with file paths only (no base64 data)
+        const exportManifest = {
+            thumbnails: {},
+            photos: [],
+            lastUpdated: imageManifest.lastUpdated || new Date().toISOString()
+        };
+        
+        // Copy thumbnail references (file paths only, no base64 data)
+        for (const type in imageManifest.thumbnails) {
+            const thumb = imageManifest.thumbnails[type];
+            exportManifest.thumbnails[type] = {
+                fileName: thumb.fileName,
+                savedAt: thumb.savedAt
+            };
+        }
+        
+        // Copy photo references (file paths only, no base64 data)
+        for (const photo of imageManifest.photos) {
+            exportManifest.photos.push({
+                fileName: photo.fileName,
+                savedAt: photo.savedAt
+            });
+        }
+        
+        const jsonString = JSON.stringify(exportManifest, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
