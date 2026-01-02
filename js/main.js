@@ -179,7 +179,7 @@
     function init() {
         // FIRST: Immediately hide offline state if thumbnail exists in settings
         // This prevents the offline state from flashing before settings are loaded
-        const settings = loadSettings();
+        const settings = loadSettingsSync();
         if (settings && settings.thumbnail) {
             const offlineState = document.getElementById('offlineState');
             if (offlineState) {
@@ -213,8 +213,8 @@
         }, 500); // Check every 500ms
         
         // Immediately check for thumbnail and hide offline state if present
-        setTimeout(function() {
-            const settings = loadSettings();
+        setTimeout(async function() {
+            const settings = await loadSettings();
             if (settings && settings.thumbnail) {
                 const videoWrapper = document.getElementById('videoWrapper');
                 if (videoWrapper) {
@@ -380,7 +380,8 @@
         const videoWrapper = document.getElementById('videoWrapper');
         if (videoWrapper) {
             const thumbnail = videoWrapper.querySelector('.live-video-thumbnail');
-            const settings = loadSettings();
+            // Load settings synchronously for immediate check
+            const settings = loadSettingsSync();
             
             // If thumbnail exists in DOM OR in settings, don't show offline state
             if ((thumbnail && thumbnail.offsetParent !== null) || (settings && settings.thumbnail)) {
@@ -2878,14 +2879,14 @@ END:VCALENDAR`;
     /**
      * Load and apply saved settings
      */
-    function loadAndApplySettings() {
-        const settingsData = localStorage.getItem('websiteSettings');
-        if (!settingsData) {
+    async function loadAndApplySettings() {
+        // Load settings (async to check images folder first)
+        const settings = await loadSettings();
+        if (!settings) {
             return;
         }
         
         try {
-            const settings = JSON.parse(settingsData);
             
             // Wait for DOM to be ready
             const applySettings = function() {
@@ -2965,7 +2966,54 @@ END:VCALENDAR`;
     /**
      * Load settings (helper function)
      */
-    function loadSettings() {
+    async function loadSettings() {
+        const settingsData = localStorage.getItem('websiteSettings');
+        let settings = {};
+        
+        if (settingsData) {
+            try {
+                settings = JSON.parse(settingsData);
+            } catch (e) {
+                settings = {};
+            }
+        }
+        
+        // Try to load thumbnail from images folder first (cross-device support)
+        if (window.RajCreationImages && typeof window.RajCreationImages.getThumbnail === 'function') {
+            try {
+                const thumbnailFromImages = await window.RajCreationImages.getThumbnail('live');
+                if (thumbnailFromImages) {
+                    settings.thumbnail = thumbnailFromImages;
+                }
+            } catch (e) {
+                // If image storage system fails, fall back to localStorage
+            }
+        }
+        
+        // Migrate old format data to new format (backward compatibility)
+        if (!settings.thumbnail) {
+            const oldThumbnail = localStorage.getItem('liveThumbnail');
+            if (oldThumbnail) {
+                settings.thumbnail = oldThumbnail;
+                localStorage.setItem('websiteSettings', JSON.stringify(settings));
+            }
+        }
+        
+        if (!settings.liveStreamEmbed) {
+            const oldEmbed = localStorage.getItem('liveStreamEmbed');
+            if (oldEmbed) {
+                settings.liveStreamEmbed = oldEmbed;
+                localStorage.setItem('websiteSettings', JSON.stringify(settings));
+            }
+        }
+        
+        return settings;
+    }
+    
+    /**
+     * Load settings synchronously (for immediate use, uses cached or localStorage)
+     */
+    function loadSettingsSync() {
         const settingsData = localStorage.getItem('websiteSettings');
         let settings = {};
         
@@ -3000,8 +3048,8 @@ END:VCALENDAR`;
     /**
      * Force apply thumbnail if it exists in settings
      */
-    function forceApplyThumbnailIfExists() {
-        const settings = loadSettings();
+    async function forceApplyThumbnailIfExists() {
+        const settings = await loadSettings();
         if (settings && settings.thumbnail) {
             const videoWrapper = document.getElementById('videoWrapper');
             if (videoWrapper) {

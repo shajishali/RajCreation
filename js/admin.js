@@ -350,6 +350,12 @@
                         <button class="btn-save" id="saveThumbnailBtn">Save Thumbnail</button>
                         <button class="btn-clear" id="clearThumbnailBtn">Remove Thumbnail</button>
                     </div>
+                    <div class="form-actions" style="margin-top: 1rem; border-top: 1px solid #333; padding-top: 1rem;">
+                        <button class="btn-save" id="exportThumbnailBtn" style="background: #4caf50;">📥 Export to Images Folder</button>
+                        <small style="display: block; margin-top: 0.5rem; color: #999; font-size: 0.85rem;">
+                            After saving, click "Export" to download the image file and manifest.json. Then place them in the images folder and commit to your repository.
+                        </small>
+                    </div>
                 </div>
             </div>
         `;
@@ -361,6 +367,7 @@
         document.getElementById('thumbnailInput').addEventListener('change', handleThumbnailPreview);
         document.getElementById('saveThumbnailBtn').addEventListener('click', saveThumbnail);
         document.getElementById('clearThumbnailBtn').addEventListener('click', clearThumbnail);
+        document.getElementById('exportThumbnailBtn').addEventListener('click', exportThumbnailToImages);
     }
 
     /**
@@ -457,17 +464,24 @@
     /**
      * Load Thumbnail Preview
      */
-    function loadThumbnailPreview() {
-        // Check websiteSettings first (new format)
-        const settingsData = localStorage.getItem('websiteSettings');
+    async function loadThumbnailPreview() {
         let thumbnailData = null;
         
-        if (settingsData) {
-            try {
-                const settings = JSON.parse(settingsData);
-                thumbnailData = settings.thumbnail || null;
-            } catch (e) {
-                // Invalid JSON, fall through to old format
+        // Try new image storage system first
+        if (window.RajCreationImages) {
+            thumbnailData = await window.RajCreationImages.getThumbnail('live');
+        }
+        
+        // Check websiteSettings (fallback)
+        if (!thumbnailData) {
+            const settingsData = localStorage.getItem('websiteSettings');
+            if (settingsData) {
+                try {
+                    const settings = JSON.parse(settingsData);
+                    thumbnailData = settings.thumbnail || null;
+                } catch (e) {
+                    // Invalid JSON, fall through
+                }
             }
         }
         
@@ -487,16 +501,31 @@
     /**
      * Save Thumbnail
      */
-    function saveThumbnail() {
+    async function saveThumbnail() {
         const fileInput = document.getElementById('thumbnailInput');
         const file = fileInput.files[0];
         
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = async function(event) {
                 const thumbnailData = event.target.result;
+                const fileName = `thumbnail_live_${Date.now()}.${file.name.split('.').pop()}`;
                 
-                // Save to websiteSettings object (for main.js compatibility)
+                // Save using new image storage system (stores to images folder structure)
+                if (window.RajCreationImages) {
+                    await window.RajCreationImages.saveThumbnail(thumbnailData, 'live', fileName);
+                    
+                    // Automatically export the image file and manifest
+                    setTimeout(async () => {
+                        try {
+                            await window.RajCreationImages.exportThumbnail('live');
+                        } catch (e) {
+                            console.error('Export error:', e);
+                        }
+                    }, 500);
+                }
+                
+                // Also save to websiteSettings object (for main.js compatibility)
                 const settingsData = localStorage.getItem('websiteSettings');
                 let settings = settingsData ? JSON.parse(settingsData) : {};
                 settings.thumbnail = thumbnailData;
@@ -510,11 +539,19 @@
                     window.RajCreationLive.applyThumbnail(thumbnailData);
                 }
                 
-                showNotification('success', '✅ Thumbnail saved successfully!');
+                showNotification('success', '✅ Thumbnail saved! Files are downloading. After placing them in the images folder and committing to Git, it will be visible on all devices.');
                 closeModal('thumbnailEditModal');
                 
-                // Reload page to show thumbnail (with small delay to ensure save completed)
-                setTimeout(() => location.reload(), 300);
+                // Don't reload immediately - let user see the notification
+                setTimeout(() => {
+                    // Show reminder about files
+                    setTimeout(() => {
+                        showNotification('info', '💡 Remember: Place the downloaded files in the images folder and commit to Git for cross-device access.');
+                    }, 2000);
+                }, 1000);
+                
+                // Reload page to show thumbnail (with delay to ensure save completed)
+                setTimeout(() => location.reload(), 500);
             };
             reader.readAsDataURL(file);
         } else {
@@ -525,8 +562,13 @@
     /**
      * Clear Thumbnail
      */
-    function clearThumbnail() {
+    async function clearThumbnail() {
         if (confirm('Remove the current thumbnail?')) {
+            // Remove using new image storage system
+            if (window.RajCreationImages) {
+                await window.RajCreationImages.removeThumbnail('live');
+            }
+            
             // Remove from websiteSettings
             const settingsData = localStorage.getItem('websiteSettings');
             if (settingsData) {
@@ -546,6 +588,22 @@
             showNotification('success', '✅ Thumbnail removed');
             closeModal('thumbnailEditModal');
             setTimeout(() => location.reload(), 300);
+        }
+    }
+
+    /**
+     * Export Thumbnail to Images Folder
+     */
+    async function exportThumbnailToImages() {
+        if (window.RajCreationImages && window.RajCreationImages.exportThumbnail) {
+            const result = await window.RajCreationImages.exportThumbnail('live');
+            if (result) {
+                showNotification('success', '✅ Thumbnail exported! Download the image file and images-manifest.json, then place them in the images folder and commit to your repository.');
+            } else {
+                showNotification('error', '❌ No thumbnail to export. Please save a thumbnail first.');
+            }
+        } else {
+            showNotification('error', '❌ Image storage system not loaded. Please refresh the page.');
         }
     }
 
