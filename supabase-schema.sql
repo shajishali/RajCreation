@@ -39,6 +39,17 @@ CREATE TABLE IF NOT EXISTS videos (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Add display_order column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'videos' AND column_name = 'display_order'
+    ) THEN
+        ALTER TABLE videos ADD COLUMN display_order INTEGER DEFAULT 0;
+    END IF;
+END $$;
+
 -- Indexes for videos
 CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at);
 CREATE INDEX IF NOT EXISTS idx_videos_display_order ON videos(display_order);
@@ -62,6 +73,17 @@ CREATE TABLE IF NOT EXISTS photos (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Add display_order column if it doesn't exist (for existing tables)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'photos' AND column_name = 'display_order'
+    ) THEN
+        ALTER TABLE photos ADD COLUMN display_order INTEGER DEFAULT 0;
+    END IF;
+END $$;
 
 -- Indexes for photos
 CREATE INDEX IF NOT EXISTS idx_photos_created_at ON photos(created_at);
@@ -218,7 +240,9 @@ BEGIN
         v.embed_link,
         v.created_at
     FROM videos v
-    ORDER BY v.display_order ASC, v.created_at DESC;
+    ORDER BY 
+        COALESCE(v.display_order, 0) ASC, 
+        v.created_at DESC;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -250,7 +274,9 @@ BEGIN
         p.password,
         p.created_at
     FROM photos p
-    ORDER BY p.display_order ASC, p.created_at DESC;
+    ORDER BY 
+        COALESCE(p.display_order, 0) ASC, 
+        p.created_at DESC;
 END;
 $$ LANGUAGE plpgsql;
 
