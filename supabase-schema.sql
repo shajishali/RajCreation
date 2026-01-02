@@ -8,7 +8,7 @@
 -- ============================================
 -- 1. THUMBNAILS TABLE
 -- ============================================
--- Stores thumbnail images for live streams and videos
+-- Stores thumbnail images for live streams
 CREATE TABLE IF NOT EXISTS thumbnails (
     id BIGSERIAL PRIMARY KEY,
     type TEXT UNIQUE NOT NULL, -- 'live', 'video', etc.
@@ -22,73 +22,53 @@ CREATE TABLE IF NOT EXISTS thumbnails (
 CREATE INDEX IF NOT EXISTS idx_thumbnails_type ON thumbnails(type);
 
 -- ============================================
--- 2. EVENTS TABLE
--- ============================================
--- Stores event details (live streams, scheduled events, etc.)
-CREATE TABLE IF NOT EXISTS events (
-    id BIGSERIAL PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT,
-    date DATE,
-    time TIME,
-    thumbnail_url TEXT,
-    embed_code TEXT,
-    is_live BOOLEAN DEFAULT FALSE,
-    status TEXT DEFAULT 'scheduled', -- 'scheduled', 'live', 'completed', 'cancelled'
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Indexes for events
-CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
-CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
-CREATE INDEX IF NOT EXISTS idx_events_is_live ON events(is_live);
-
--- ============================================
--- 3. PHOTOS TABLE
--- ============================================
--- Stores photo gallery images
-CREATE TABLE IF NOT EXISTS photos (
-    id BIGSERIAL PRIMARY KEY,
-    file_name TEXT NOT NULL,
-    image_url TEXT NOT NULL,
-    description TEXT,
-    category TEXT, -- 'event', 'gallery', 'featured', etc.
-    display_order INTEGER DEFAULT 0, -- For custom ordering
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Indexes for photos
-CREATE INDEX IF NOT EXISTS idx_photos_created_at ON photos(created_at);
-CREATE INDEX IF NOT EXISTS idx_photos_category ON photos(category);
-CREATE INDEX IF NOT EXISTS idx_photos_display_order ON photos(display_order);
-
--- ============================================
--- 4. VIDEOS TABLE
+-- 2. VIDEOS TABLE
 -- ============================================
 -- Stores recorded videos and video metadata
+-- Matches admin/video.html form fields
 CREATE TABLE IF NOT EXISTS videos (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    description TEXT,
-    embed_link TEXT NOT NULL, -- Video embed code/URL
-    thumbnail_url TEXT,
-    duration INTEGER, -- Duration in seconds
-    view_count INTEGER DEFAULT 0,
-    is_featured BOOLEAN DEFAULT FALSE,
-    category TEXT,
-    tags TEXT[], -- Array of tags
+    thumbnail_url TEXT NOT NULL, -- Image URL from Supabase Storage
+    duration TEXT, -- e.g., "10:30"
+    date TEXT, -- e.g., "Jan 15, 2024"
+    views TEXT, -- e.g., "1.2K views"
+    embed_link TEXT NOT NULL, -- Video embed iframe code
+    display_order INTEGER DEFAULT 0, -- For custom ordering
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Indexes for videos
 CREATE INDEX IF NOT EXISTS idx_videos_created_at ON videos(created_at);
-CREATE INDEX IF NOT EXISTS idx_videos_is_featured ON videos(is_featured);
-CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category);
+CREATE INDEX IF NOT EXISTS idx_videos_display_order ON videos(display_order);
 
 -- ============================================
--- 5. SETTINGS TABLE
+-- 3. PHOTOS TABLE
+-- ============================================
+-- Stores photo gallery images and event photos
+-- Matches admin/photo.html form fields
+CREATE TABLE IF NOT EXISTS photos (
+    id BIGSERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    thumbnail_url TEXT NOT NULL, -- Thumbnail image URL from Supabase Storage
+    full_image_url TEXT, -- Full size image URL from Supabase Storage
+    date TEXT, -- e.g., "January 15, 2024"
+    location TEXT, -- Event location or venue
+    description TEXT, -- Event description or details
+    program_url TEXT NOT NULL, -- URL to external program/3rd party app
+    password TEXT, -- Password required to access program URL
+    display_order INTEGER DEFAULT 0, -- For custom ordering
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for photos
+CREATE INDEX IF NOT EXISTS idx_photos_created_at ON photos(created_at);
+CREATE INDEX IF NOT EXISTS idx_photos_display_order ON photos(display_order);
+
+-- ============================================
+-- 4. SETTINGS TABLE
 -- ============================================
 -- Stores website settings and configuration
 CREATE TABLE IF NOT EXISTS settings (
@@ -104,7 +84,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_settings_key ON settings(key);
 
 -- ============================================
--- 6. UPDATE TIMESTAMPS TRIGGER FUNCTION
+-- 5. UPDATE TIMESTAMPS TRIGGER FUNCTION
 -- ============================================
 -- Automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -119,24 +99,23 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_thumbnails_updated_at BEFORE UPDATE ON thumbnails
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_events_updated_at BEFORE UPDATE ON events
+CREATE TRIGGER update_videos_updated_at BEFORE UPDATE ON videos
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_videos_updated_at BEFORE UPDATE ON videos
+CREATE TRIGGER update_photos_updated_at BEFORE UPDATE ON photos
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON settings
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- 7. ROW LEVEL SECURITY (RLS) POLICIES
+-- 6. ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================
 
 -- Enable RLS on all tables
 ALTER TABLE thumbnails ENABLE ROW LEVEL SECURITY;
-ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
@@ -148,40 +127,9 @@ CREATE POLICY "Allow public read access for thumbnails"
     ON thumbnails FOR SELECT
     USING (true);
 
--- Allow authenticated users to insert/update/delete thumbnails
--- For now, allow all (you can restrict this later with authentication)
+-- Allow public write access to thumbnails (for admin panel)
 CREATE POLICY "Allow public write access for thumbnails"
     ON thumbnails FOR ALL
-    USING (true)
-    WITH CHECK (true);
-
--- ============================================
--- EVENTS POLICIES
--- ============================================
-
--- Allow public read access to events
-CREATE POLICY "Allow public read access for events"
-    ON events FOR SELECT
-    USING (true);
-
--- Allow public write access to events (for admin panel)
-CREATE POLICY "Allow public write access for events"
-    ON events FOR ALL
-    USING (true)
-    WITH CHECK (true);
-
--- ============================================
--- PHOTOS POLICIES
--- ============================================
-
--- Allow public read access to photos
-CREATE POLICY "Allow public read access for photos"
-    ON photos FOR SELECT
-    USING (true);
-
--- Allow public write access to photos (for admin panel)
-CREATE POLICY "Allow public write access for photos"
-    ON photos FOR ALL
     USING (true)
     WITH CHECK (true);
 
@@ -201,6 +149,21 @@ CREATE POLICY "Allow public write access for videos"
     WITH CHECK (true);
 
 -- ============================================
+-- PHOTOS POLICIES
+-- ============================================
+
+-- Allow public read access to photos
+CREATE POLICY "Allow public read access for photos"
+    ON photos FOR SELECT
+    USING (true);
+
+-- Allow public write access to photos (for admin panel)
+CREATE POLICY "Allow public write access for photos"
+    ON photos FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- ============================================
 -- SETTINGS POLICIES
 -- ============================================
 
@@ -216,46 +179,7 @@ CREATE POLICY "Allow public write access for settings"
     WITH CHECK (true);
 
 -- ============================================
--- 8. STORAGE BUCKET POLICIES
--- ============================================
--- Note: These need to be set up in Supabase Dashboard → Storage
--- But we'll create them here for reference
-
--- Storage bucket: 'images'
--- This bucket will store all uploaded images (thumbnails, photos, etc.)
-
--- Policy 1: Allow public read access to images
--- Run this in SQL Editor after creating the 'images' bucket:
-/*
-CREATE POLICY "Allow public read access to images"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'images');
-*/
-
--- Policy 2: Allow authenticated uploads
--- For development, you can allow all uploads:
-/*
-CREATE POLICY "Allow public uploads to images"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'images');
-*/
-
--- Policy 3: Allow authenticated updates
-/*
-CREATE POLICY "Allow public updates to images"
-ON storage.objects FOR UPDATE
-USING (bucket_id = 'images');
-*/
-
--- Policy 4: Allow authenticated deletes
-/*
-CREATE POLICY "Allow public deletes from images"
-ON storage.objects FOR DELETE
-USING (bucket_id = 'images');
-*/
-
--- ============================================
--- 9. INITIAL DATA (OPTIONAL)
+-- 7. INITIAL DATA (OPTIONAL)
 -- ============================================
 
 -- Insert default settings
@@ -267,41 +191,66 @@ VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- ============================================
--- 10. HELPER FUNCTIONS (OPTIONAL)
+-- 8. HELPER FUNCTIONS (OPTIONAL)
 -- ============================================
 
--- Function to get current live event
-CREATE OR REPLACE FUNCTION get_current_live_event()
+-- Function to get videos ordered by display_order
+CREATE OR REPLACE FUNCTION get_videos_ordered()
 RETURNS TABLE (
     id BIGINT,
     title TEXT,
-    description TEXT,
-    embed_code TEXT,
-    thumbnail_url TEXT
+    thumbnail_url TEXT,
+    duration TEXT,
+    date TEXT,
+    views TEXT,
+    embed_link TEXT,
+    created_at TIMESTAMP WITH TIME ZONE
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        e.id,
-        e.title,
-        e.description,
-        e.embed_code,
-        e.thumbnail_url
-    FROM events e
-    WHERE e.is_live = TRUE
-    AND e.status = 'live'
-    ORDER BY e.updated_at DESC
-    LIMIT 1;
+        v.id,
+        v.title,
+        v.thumbnail_url,
+        v.duration,
+        v.date,
+        v.views,
+        v.embed_link,
+        v.created_at
+    FROM videos v
+    ORDER BY v.display_order ASC, v.created_at DESC;
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to increment video view count
-CREATE OR REPLACE FUNCTION increment_video_views(video_id BIGINT)
-RETURNS VOID AS $$
+-- Function to get photos ordered by display_order
+CREATE OR REPLACE FUNCTION get_photos_ordered()
+RETURNS TABLE (
+    id BIGINT,
+    title TEXT,
+    thumbnail_url TEXT,
+    full_image_url TEXT,
+    date TEXT,
+    location TEXT,
+    description TEXT,
+    program_url TEXT,
+    password TEXT,
+    created_at TIMESTAMP WITH TIME ZONE
+) AS $$
 BEGIN
-    UPDATE videos
-    SET view_count = view_count + 1
-    WHERE id = video_id;
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.title,
+        p.thumbnail_url,
+        p.full_image_url,
+        p.date,
+        p.location,
+        p.description,
+        p.program_url,
+        p.password,
+        p.created_at
+    FROM photos p
+    ORDER BY p.display_order ASC, p.created_at DESC;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -310,8 +259,7 @@ $$ LANGUAGE plpgsql;
 -- ============================================
 -- After running this schema:
 -- 1. Go to Storage → Create bucket named 'images' (make it public)
--- 2. Set up storage policies (see section 8 above)
--- 3. Update your supabase-config.js with your project credentials
+-- 2. Set up storage policies (see supabase-storage-policies.sql)
+-- 3. Update your js/config.js with your project credentials
 -- 4. Test the connection from your admin panel
 -- ============================================
-
