@@ -47,7 +47,7 @@
     /**
      * Upload Image to Supabase Storage
      */
-    async function uploadImage(file, fileName, folder = 'images') {
+    async function uploadImage(file, fileName, folder = 'thumbnails') {
         const client = getClient();
         if (!client) {
             throw new Error('Supabase client not initialized');
@@ -55,23 +55,27 @@
 
         try {
             // Upload file to Supabase Storage
+            const filePath = `${folder}/${fileName}`;
             const { data, error } = await client.storage
                 .from('images')
-                .upload(`${folder}/${fileName}`, file, {
+                .upload(filePath, file, {
                     cacheControl: '3600',
                     upsert: true
                 });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Upload error:', error);
+                throw error;
+            }
 
             // Get public URL
             const { data: urlData } = client.storage
                 .from('images')
-                .getPublicUrl(`${folder}/${fileName}`);
+                .getPublicUrl(filePath);
 
             return {
                 success: true,
-                path: `${folder}/${fileName}`,
+                path: filePath,
                 url: urlData.publicUrl
             };
         } catch (error) {
