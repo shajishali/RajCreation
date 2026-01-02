@@ -200,17 +200,36 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
     <script src="js/main.js"></script>
     <script src="js/admin.js"></script>
     <script>
         // Load and display videos
-        function loadVideos() {
+        async function loadVideos() {
             const container = document.getElementById('videosGridContainer');
             const playerContainer = document.getElementById('videoPlayerContainer');
             
-            // Try to load videos from localStorage
-            const videosJson = localStorage.getItem('recordedVideosList');
-            const videos = videosJson ? JSON.parse(videosJson) : [];
+            let videos = [];
+            
+            // Try to load videos from Supabase first
+            if (window.RajCreationSupabase && typeof window.RajCreationSupabase.getVideos === 'function') {
+                try {
+                    videos = await window.RajCreationSupabase.getVideos();
+                    console.log('Loaded videos from Supabase:', videos.length);
+                } catch (error) {
+                    console.error('Error loading videos from Supabase:', error);
+                    // Fallback to localStorage
+                }
+            }
+            
+            // Fallback to localStorage if Supabase failed or returned no videos
+            if (videos.length === 0) {
+                const videosJson = localStorage.getItem('recordedVideosList');
+                videos = videosJson ? JSON.parse(videosJson) : [];
+                console.log('Loaded videos from localStorage:', videos.length);
+            }
             
             if (videos.length === 0) {
                 container.innerHTML = `
@@ -226,10 +245,14 @@
             // Create videos grid matching screenshot style
             let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; margin-top: 2rem; padding: 0 1rem;">';
             videos.forEach((video, index) => {
+                // Handle both Supabase format (thumbnail_url) and localStorage format (thumbnail)
+                const thumbnail = video.thumbnail_url || video.thumbnail || 'https://via.placeholder.com/640x360/2a2a2a/fff?text=Video+' + (index + 1);
+                const videoId = video.id || index;
+                
                 html += `
-                    <div class="video-card" style="background: #2a2a2a; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;" onclick="playVideo(${index})">
+                    <div class="video-card" style="background: #2a2a2a; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s ease;" onclick="playVideo(${videoId}, ${index})" data-video-id="${videoId}" data-video-index="${index}">
                         <div class="video-thumbnail-container" style="position: relative; width: 100%; padding-top: 56.25%; background: #1a1a1a;">
-                            <img src="${video.thumbnail || 'https://via.placeholder.com/640x360/2a2a2a/fff?text=Video+' + (index + 1)}" 
+                            <img src="${thumbnail}" 
                                  alt="${video.title}" 
                                  style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
                             <div class="duration-badge" style="position: absolute; bottom: 10px; right: 10px; background: rgba(0, 0, 0, 0.8); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.875rem; font-weight: 600;">
@@ -239,8 +262,8 @@
                         <div style="padding: 1.25rem;">
                             <h3 style="margin: 0 0 0.75rem 0; color: #fff; font-size: 1.125rem; font-weight: 600;">${video.title}</h3>
                             <div style="display: flex; align-items: center; gap: 1rem; color: #999; font-size: 0.875rem;">
-                                <span>📅 ${video.date}</span>
-                                <span>👁 ${video.views}</span>
+                                <span>📅 ${video.date || ''}</span>
+                                <span>👁 ${video.views || ''}</span>
                             </div>
                         </div>
                     </div>
@@ -248,15 +271,48 @@
             });
             html += '</div>';
             container.innerHTML = html;
+            
+            // Store videos in a global variable for playVideo function
+            window.currentVideos = videos;
         }
         
         // Play video
-        function playVideo(index) {
-            const videosJson = localStorage.getItem('recordedVideosList');
-            const videos = videosJson ? JSON.parse(videosJson) : [];
-            const video = videos[index];
+        async function playVideo(videoId, index) {
+            let videos = window.currentVideos || [];
             
-            if (!video || !video.embedLink) {
+            // If videos not in global, try to load from Supabase
+            if (videos.length === 0 && window.RajCreationSupabase && typeof window.RajCreationSupabase.getVideos === 'function') {
+                try {
+                    videos = await window.RajCreationSupabase.getVideos();
+                } catch (error) {
+                    console.error('Error loading videos from Supabase:', error);
+                }
+            }
+            
+            // Fallback to localStorage
+            if (videos.length === 0) {
+                const videosJson = localStorage.getItem('recordedVideosList');
+                videos = videosJson ? JSON.parse(videosJson) : [];
+            }
+            
+            // Find video by ID or index
+            let video = null;
+            if (videoId !== undefined && videoId !== null && !isNaN(videoId)) {
+                video = videos.find(v => v.id == videoId);
+            }
+            if (!video && index !== undefined) {
+                video = videos[index];
+            }
+            
+            if (!video) {
+                alert('Video not found!');
+                return;
+            }
+            
+            // Handle both Supabase format (embed_link) and localStorage format (embedLink)
+            const embedLink = video.embed_link || video.embedLink;
+            
+            if (!embedLink) {
                 alert('Video embed code not found!');
                 return;
             }
@@ -274,7 +330,7 @@
             
             // Create a temporary div to parse the embed code
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = video.embedLink.trim();
+            tempDiv.innerHTML = embedLink.trim();
             
             // Move all nodes from tempDiv to videoWrapper
             while (tempDiv.firstChild) {
@@ -329,7 +385,10 @@
         
         // Load videos on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadVideos();
+            // Wait for Supabase to initialize
+            setTimeout(() => {
+                loadVideos();
+            }, 500);
         });
     </script>
     <style>
