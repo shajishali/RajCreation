@@ -2964,46 +2964,32 @@ END:VCALENDAR`;
     }
     
     /**
-     * Load settings (helper function)
+     * Load settings (helper function) - Only from Supabase
      */
     async function loadSettings() {
-        const settingsData = localStorage.getItem('websiteSettings');
         let settings = {};
         
-        if (settingsData) {
+        // Load thumbnail from Supabase
+        if (window.RajCreationSupabase && window.RajCreationSupabase.getThumbnail) {
             try {
-                settings = JSON.parse(settingsData);
-            } catch (e) {
-                settings = {};
-            }
-        }
-        
-        // Try to load thumbnail from images folder first (cross-device support)
-        if (window.RajCreationImages && typeof window.RajCreationImages.getThumbnail === 'function') {
-            try {
-                const thumbnailFromImages = await window.RajCreationImages.getThumbnail('live');
-                if (thumbnailFromImages) {
-                    settings.thumbnail = thumbnailFromImages;
+                const thumbnail = await window.RajCreationSupabase.getThumbnail('live');
+                if (thumbnail) {
+                    settings.thumbnail = thumbnail;
                 }
             } catch (e) {
-                // If image storage system fails, fall back to localStorage
+                console.log('No thumbnail found in Supabase:', e);
             }
         }
         
-        // Migrate old format data to new format (backward compatibility)
-        if (!settings.thumbnail) {
-            const oldThumbnail = localStorage.getItem('liveThumbnail');
-            if (oldThumbnail) {
-                settings.thumbnail = oldThumbnail;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
-            }
-        }
-        
-        if (!settings.liveStreamEmbed) {
-            const oldEmbed = localStorage.getItem('liveStreamEmbed');
-            if (oldEmbed) {
-                settings.liveStreamEmbed = oldEmbed;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
+        // Load embed code from Supabase
+        if (window.RajCreationSupabase && window.RajCreationSupabase.getLiveStreamEmbed) {
+            try {
+                const embedCode = await window.RajCreationSupabase.getLiveStreamEmbed();
+                if (embedCode) {
+                    settings.liveStreamEmbed = embedCode;
+                }
+            } catch (e) {
+                console.log('No embed code found in Supabase:', e);
             }
         }
         
@@ -3011,38 +2997,12 @@ END:VCALENDAR`;
     }
     
     /**
-     * Load settings synchronously (for immediate use, uses cached or localStorage)
+     * Load settings synchronously (returns empty - use async loadSettings for Supabase)
      */
     function loadSettingsSync() {
-        const settingsData = localStorage.getItem('websiteSettings');
-        let settings = {};
-        
-        if (settingsData) {
-            try {
-                settings = JSON.parse(settingsData);
-            } catch (e) {
-                settings = {};
-            }
-        }
-        
-        // Migrate old format data to new format (backward compatibility)
-        if (!settings.thumbnail) {
-            const oldThumbnail = localStorage.getItem('liveThumbnail');
-            if (oldThumbnail) {
-                settings.thumbnail = oldThumbnail;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
-            }
-        }
-        
-        if (!settings.liveStreamEmbed) {
-            const oldEmbed = localStorage.getItem('liveStreamEmbed');
-            if (oldEmbed) {
-                settings.liveStreamEmbed = oldEmbed;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
-            }
-        }
-        
-        return settings;
+        // Return empty settings - Supabase requires async calls
+        // Use loadSettings() async function instead
+        return {};
     }
 
     /**

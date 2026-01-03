@@ -544,6 +544,83 @@
         }
     }
 
+    /**
+     * Save Live Stream Embed Code to Settings Table
+     */
+    async function saveLiveStreamEmbed(embedCode) {
+        const client = getClient();
+        if (!client) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        try {
+            const { data, error } = await client
+                .from('settings')
+                .upsert({
+                    key: 'live_stream_embed',
+                    value: embedCode,
+                    value_type: 'text',
+                    description: 'Live stream embed code',
+                    updated_at: new Date().toISOString()
+                }, {
+                    onConflict: 'key'
+                });
+
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            console.error('Error saving live stream embed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get Live Stream Embed Code from Settings Table
+     */
+    async function getLiveStreamEmbed() {
+        const client = getClient();
+        if (!client) {
+            return null;
+        }
+
+        try {
+            const { data, error } = await client
+                .from('settings')
+                .select('value')
+                .eq('key', 'live_stream_embed')
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
+            return data ? data.value : null;
+        } catch (error) {
+            console.error('Error getting live stream embed:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Delete Live Stream Embed Code from Settings Table
+     */
+    async function deleteLiveStreamEmbed() {
+        const client = getClient();
+        if (!client) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        try {
+            const { error } = await client
+                .from('settings')
+                .delete()
+                .eq('key', 'live_stream_embed');
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting live stream embed:', error);
+            throw error;
+        }
+    }
+
     // Initialize when loaded
     // Note: Supabase script must be loaded first
     if (typeof supabase !== 'undefined') {
@@ -557,6 +634,9 @@
         uploadImage: uploadImage,
         saveThumbnail: saveThumbnail,
         getThumbnail: getThumbnail,
+        saveLiveStreamEmbed: saveLiveStreamEmbed,
+        getLiveStreamEmbed: getLiveStreamEmbed,
+        deleteLiveStreamEmbed: deleteLiveStreamEmbed,
         saveEvent: saveEvent,
         getEvents: getEvents,
         deleteEvent: deleteEvent,

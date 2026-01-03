@@ -350,12 +350,9 @@
                         <button class="btn-save" id="saveThumbnailBtn">Save Thumbnail</button>
                         <button class="btn-clear" id="clearThumbnailBtn">Remove Thumbnail</button>
                     </div>
-                    <div class="form-actions" style="margin-top: 1rem; border-top: 1px solid #333; padding-top: 1rem;">
-                        <button class="btn-save" id="exportThumbnailBtn" style="background: #4caf50;">📥 Export to Images Folder</button>
-                        <small style="display: block; margin-top: 0.5rem; color: #999; font-size: 0.85rem;">
-                            After saving, click "Export" to download the image file and manifest.json. Then place them in the images folder and commit to your repository.
-                        </small>
-                    </div>
+                    <small style="display: block; margin-top: 1rem; color: #999; font-size: 0.85rem;">
+                        Thumbnails are stored in Supabase and will be available on all devices.
+                    </small>
                 </div>
             </div>
         `;
@@ -367,7 +364,6 @@
         document.getElementById('thumbnailInput').addEventListener('change', handleThumbnailPreview);
         document.getElementById('saveThumbnailBtn').addEventListener('click', saveThumbnail);
         document.getElementById('clearThumbnailBtn').addEventListener('click', clearThumbnail);
-        document.getElementById('exportThumbnailBtn').addEventListener('click', exportThumbnailToImages);
     }
 
     /**
@@ -465,45 +461,21 @@
      * Load Thumbnail Preview
      */
     async function loadThumbnailPreview() {
-        let thumbnailData = null;
-        
-        // Try Supabase first (for cross-device access)
+        // Only load from Supabase
         if (window.RajCreationSupabase && window.RajCreationSupabase.getThumbnail) {
             try {
-                thumbnailData = await window.RajCreationSupabase.getThumbnail('live');
-            } catch (e) {
-                console.log('Supabase thumbnail not found, trying local storage');
-            }
-        }
-        
-        // Try image storage system (local files)
-        if (!thumbnailData && window.RajCreationImages) {
-            thumbnailData = await window.RajCreationImages.getThumbnail('live');
-        }
-        
-        // Check websiteSettings (fallback)
-        if (!thumbnailData) {
-            const settingsData = localStorage.getItem('websiteSettings');
-            if (settingsData) {
-                try {
-                    const settings = JSON.parse(settingsData);
-                    thumbnailData = settings.thumbnail || null;
-                } catch (e) {
-                    // Invalid JSON, fall through
+                const thumbnailData = await window.RajCreationSupabase.getThumbnail('live');
+                if (thumbnailData) {
+                    const preview = document.getElementById('thumbnailPreview');
+                    if (preview) {
+                        preview.innerHTML = `<img src="${thumbnailData}" alt="Current Thumbnail" style="max-width: 100%; border-radius: 8px;">`;
+                    }
                 }
+            } catch (e) {
+                console.log('Supabase thumbnail not found:', e);
             }
-        }
-        
-        // Fall back to old format if not found
-        if (!thumbnailData) {
-            thumbnailData = localStorage.getItem('liveThumbnail');
-        }
-        
-        if (thumbnailData) {
-            const preview = document.getElementById('thumbnailPreview');
-            if (preview) {
-                preview.innerHTML = `<img src="${thumbnailData}" alt="Current Thumbnail" style="max-width: 100%; border-radius: 8px;">`;
-            }
+        } else {
+            console.error('Supabase not available. Please ensure Supabase is configured.');
         }
     }
 
@@ -514,106 +486,39 @@
         const fileInput = document.getElementById('thumbnailInput');
         const file = fileInput.files[0];
         
-        if (file) {
-            const fileName = `thumbnail_live_${Date.now()}.${file.name.split('.').pop()}`;
+        if (!file) {
+            showNotification('error', '❌ Please select an image');
+            return;
+        }
+
+        // Check if Supabase is available
+        if (!window.RajCreationSupabase || !window.RajCreationSupabase.uploadImage) {
+            showNotification('error', '❌ Supabase is not configured. Please set up Supabase first.');
+            return;
+        }
+
+        const fileName = `thumbnail_live_${Date.now()}.${file.name.split('.').pop()}`;
+        
+        try {
+            showNotification('info', '⏳ Uploading thumbnail to Supabase...');
             
-            try {
-                // Try to save to Supabase first (if available)
-                if (window.RajCreationSupabase && window.RajCreationSupabase.uploadImage) {
-                    showNotification('info', '⏳ Uploading thumbnail to Supabase...');
-                    
-                    // Upload file to Supabase Storage
-                    const uploadResult = await window.RajCreationSupabase.uploadImage(file, fileName, 'thumbnails');
-                    
-                    // Save thumbnail metadata to database
-                    await window.RajCreationSupabase.saveThumbnail(fileName, uploadResult.url, 'live');
-                    
-                    // Also save base64 to localStorage for immediate display
-                    const reader = new FileReader();
-                    reader.onload = async function(event) {
-                        const thumbnailData = event.target.result;
-                        
-                        // Save to image storage system (for backward compatibility)
-                        if (window.RajCreationImages) {
-                            await window.RajCreationImages.saveThumbnail(thumbnailData, 'live', fileName);
-                        }
-                        
-                        // Save to websiteSettings for main.js compatibility
-                        const settingsData = localStorage.getItem('websiteSettings');
-                        let settings = {};
-                        if (settingsData) {
-                            try {
-                                settings = JSON.parse(settingsData);
-                            } catch (e) {
-                                settings = {};
-                            }
-                        }
-                        settings.thumbnail = uploadResult.url; // Use Supabase URL instead of base64
-                        localStorage.setItem('websiteSettings', JSON.stringify(settings));
-                        localStorage.setItem('liveThumbnail', uploadResult.url);
-                        
-                        // Apply thumbnail immediately if on index page
-                        if (window.RajCreationLive && typeof window.RajCreationLive.applyThumbnail === 'function') {
-                            window.RajCreationLive.applyThumbnail(uploadResult.url);
-                        }
-                        
-                        showNotification('success', '✅ Thumbnail saved to Supabase! It will be visible on all devices.');
-                        closeModal('thumbnailEditModal');
-                        setTimeout(() => location.reload(), 500);
-                    };
-                    reader.readAsDataURL(file);
-                    return;
-                }
-            } catch (error) {
-                console.error('Supabase upload error:', error);
-                showNotification('warning', '⚠️ Supabase upload failed, saving to local storage instead.');
+            // Upload file to Supabase Storage
+            const uploadResult = await window.RajCreationSupabase.uploadImage(file, fileName, 'thumbnails');
+            
+            // Save thumbnail metadata to database
+            await window.RajCreationSupabase.saveThumbnail(fileName, uploadResult.url, 'live');
+            
+            // Apply thumbnail immediately if on index page
+            if (window.RajCreationLive && typeof window.RajCreationLive.applyThumbnail === 'function') {
+                window.RajCreationLive.applyThumbnail(uploadResult.url);
             }
             
-            // Fallback to localStorage if Supabase is not available
-            const reader = new FileReader();
-            reader.onload = async function(event) {
-                const thumbnailData = event.target.result;
-                
-                // Save using image storage system
-                if (window.RajCreationImages) {
-                    await window.RajCreationImages.saveThumbnail(thumbnailData, 'live', fileName);
-                    
-                    // Automatically export the image file and manifest
-                    setTimeout(async () => {
-                        try {
-                            await window.RajCreationImages.exportThumbnail('live');
-                        } catch (e) {
-                            console.error('Export error:', e);
-                        }
-                    }, 500);
-                }
-                
-                // Also save to websiteSettings object (for main.js compatibility)
-                const settingsData = localStorage.getItem('websiteSettings');
-                let settings = {};
-                if (settingsData) {
-                    try {
-                        settings = JSON.parse(settingsData);
-                    } catch (e) {
-                        settings = {};
-                    }
-                }
-                settings.thumbnail = thumbnailData;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
-                localStorage.setItem('liveThumbnail', thumbnailData);
-                
-                // Apply thumbnail immediately if on index page
-                if (window.RajCreationLive && typeof window.RajCreationLive.applyThumbnail === 'function') {
-                    window.RajCreationLive.applyThumbnail(thumbnailData);
-                }
-                
-                showNotification('success', '✅ Thumbnail saved locally! Files are downloading. For cross-device access, use Supabase.');
-                closeModal('thumbnailEditModal');
-                setTimeout(() => location.reload(), 500);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            showNotification('error', '❌ Please select an image');
+            showNotification('success', '✅ Thumbnail saved to Supabase! It will be visible on all devices.');
+            closeModal('thumbnailEditModal');
+            setTimeout(() => location.reload(), 500);
+        } catch (error) {
+            console.error('Supabase upload error:', error);
+            showNotification('error', `❌ Failed to save thumbnail: ${error.message || 'Unknown error'}`);
         }
     }
 
@@ -621,130 +526,131 @@
      * Clear Thumbnail
      */
     async function clearThumbnail() {
-        if (confirm('Remove the current thumbnail?')) {
-            // Remove using new image storage system
-            if (window.RajCreationImages) {
-                await window.RajCreationImages.removeThumbnail('live');
-            }
-            
-            // Remove from websiteSettings
-            const settingsData = localStorage.getItem('websiteSettings');
-            if (settingsData) {
-                let settings = JSON.parse(settingsData);
-                delete settings.thumbnail;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
-            }
-            
-            // Also remove old key
-            localStorage.removeItem('liveThumbnail');
+        if (!confirm('Remove the current thumbnail?')) {
+            return;
+        }
+
+        // Check if Supabase is available
+        if (!window.RajCreationSupabase || !window.RajCreationSupabase.getClient) {
+            showNotification('error', '❌ Supabase is not configured. Please set up Supabase first.');
+            return;
+        }
+
+        try {
+            // Delete from Supabase database (the storage file will remain but won't be referenced)
+            // Note: We could also delete from storage, but for simplicity, we just remove the database entry
+            const client = window.RajCreationSupabase.getClient();
+            const { error } = await client
+                .from('thumbnails')
+                .delete()
+                .eq('type', 'live');
+
+            if (error) throw error;
             
             // Remove thumbnail immediately if on index page
             if (window.RajCreationLive && typeof window.RajCreationLive.removeThumbnail === 'function') {
                 window.RajCreationLive.removeThumbnail();
             }
             
-            showNotification('success', '✅ Thumbnail removed');
+            showNotification('success', '✅ Thumbnail removed from Supabase');
             closeModal('thumbnailEditModal');
             setTimeout(() => location.reload(), 300);
+        } catch (error) {
+            console.error('Error removing thumbnail:', error);
+            showNotification('error', `❌ Failed to remove thumbnail: ${error.message || 'Unknown error'}`);
         }
     }
 
     /**
-     * Export Thumbnail to Images Folder
+     * Export Thumbnail to Images Folder (Deprecated - now using Supabase only)
      */
     async function exportThumbnailToImages() {
-        if (window.RajCreationImages && window.RajCreationImages.exportThumbnail) {
-            const result = await window.RajCreationImages.exportThumbnail('live');
-            if (result) {
-                showNotification('success', '✅ Thumbnail exported! Download the image file and images-manifest.json, then place them in the images folder and commit to your repository.');
-            } else {
-                showNotification('error', '❌ No thumbnail to export. Please save a thumbnail first.');
-            }
-        } else {
-            showNotification('error', '❌ Image storage system not loaded. Please refresh the page.');
-        }
+        showNotification('info', 'ℹ️ Thumbnails are now stored in Supabase only. No local export needed.');
     }
 
     /**
      * Load Live Stream Embed
      */
-    function loadLiveStreamEmbed() {
-        // Check websiteSettings first (new format)
-        const settingsData = localStorage.getItem('websiteSettings');
-        let embedCode = null;
-        
-        if (settingsData) {
+    async function loadLiveStreamEmbed() {
+        // Only load from Supabase
+        if (window.RajCreationSupabase && window.RajCreationSupabase.getLiveStreamEmbed) {
             try {
-                const settings = JSON.parse(settingsData);
-                embedCode = settings.liveStreamEmbed || null;
+                const embedCode = await window.RajCreationSupabase.getLiveStreamEmbed();
+                if (embedCode) {
+                    const input = document.getElementById('liveStreamEmbedInput');
+                    if (input) {
+                        input.value = embedCode;
+                    }
+                }
             } catch (e) {
-                // Invalid JSON, fall through to old format
+                console.log('Supabase embed code not found:', e);
             }
-        }
-        
-        // Fall back to old format if not found
-        if (!embedCode) {
-            embedCode = localStorage.getItem('liveStreamEmbed');
-        }
-        
-        if (embedCode) {
-            const input = document.getElementById('liveStreamEmbedInput');
-            if (input) {
-                input.value = embedCode;
-            }
+        } else {
+            console.error('Supabase not available. Please ensure Supabase is configured.');
         }
     }
 
     /**
      * Save Live Stream
      */
-    function saveLiveStream() {
+    async function saveLiveStream() {
         const embedCode = document.getElementById('liveStreamEmbedInput').value.trim();
         
-        if (embedCode) {
-            // Save to websiteSettings object (for main.js compatibility)
-            const settingsData = localStorage.getItem('websiteSettings');
-            let settings = settingsData ? JSON.parse(settingsData) : {};
-            settings.liveStreamEmbed = embedCode;
-            localStorage.setItem('websiteSettings', JSON.stringify(settings));
-            
-            // Also save to old key for backward compatibility
-            localStorage.setItem('liveStreamEmbed', embedCode);
+        if (!embedCode) {
+            showNotification('error', '❌ Please enter embed code');
+            return;
+        }
+
+        // Check if Supabase is available
+        if (!window.RajCreationSupabase || !window.RajCreationSupabase.saveLiveStreamEmbed) {
+            showNotification('error', '❌ Supabase is not configured. Please set up Supabase first.');
+            return;
+        }
+
+        try {
+            // Save to Supabase settings table
+            await window.RajCreationSupabase.saveLiveStreamEmbed(embedCode);
             
             // Apply embed immediately if on index page
             if (window.RajCreationLive && typeof window.RajCreationLive.applyLiveStreamEmbed === 'function') {
                 window.RajCreationLive.applyLiveStreamEmbed(embedCode);
             }
             
-            showNotification('success', '✅ Live stream embed saved!');
+            showNotification('success', '✅ Live stream embed saved to Supabase!');
             closeModal('liveStreamEditModal');
             
             // Reload page to show embed (with small delay to ensure save completed)
             setTimeout(() => location.reload(), 300);
-        } else {
-            showNotification('error', '❌ Please enter embed code');
+        } catch (error) {
+            console.error('Error saving embed code:', error);
+            showNotification('error', `❌ Failed to save embed code: ${error.message || 'Unknown error'}`);
         }
     }
 
     /**
      * Clear Live Stream
      */
-    function clearLiveStream() {
-        if (confirm('Remove the current live stream embed?')) {
-            // Remove from websiteSettings
-            const settingsData = localStorage.getItem('websiteSettings');
-            if (settingsData) {
-                let settings = JSON.parse(settingsData);
-                delete settings.liveStreamEmbed;
-                localStorage.setItem('websiteSettings', JSON.stringify(settings));
-            }
+    async function clearLiveStream() {
+        if (!confirm('Remove the current live stream embed?')) {
+            return;
+        }
+
+        // Check if Supabase is available
+        if (!window.RajCreationSupabase || !window.RajCreationSupabase.deleteLiveStreamEmbed) {
+            showNotification('error', '❌ Supabase is not configured. Please set up Supabase first.');
+            return;
+        }
+
+        try {
+            // Delete from Supabase settings table
+            await window.RajCreationSupabase.deleteLiveStreamEmbed();
             
-            // Also remove old key
-            localStorage.removeItem('liveStreamEmbed');
-            
-            showNotification('success', '✅ Live stream embed removed');
+            showNotification('success', '✅ Live stream embed removed from Supabase');
             closeModal('liveStreamEditModal');
             setTimeout(() => location.reload(), 300);
+        } catch (error) {
+            console.error('Error removing embed code:', error);
+            showNotification('error', `❌ Failed to remove embed code: ${error.message || 'Unknown error'}`);
         }
     }
 
