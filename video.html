@@ -23,7 +23,8 @@
         const suppressPatterns = [
             'XML Parsing Error', 'datacenter.live.qcloud.com', 'not well-formed', 'qcloud.com',
             'tcplayer', 'mozPressure', 'mozInputSource', 'VideoJS', 'downloadable font',
-            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com'
+            'rejected by sanitizer', 'yololiv.com', 'static.yololiv.com', 'request aborted',
+            'Request aborted', 'network error', 'NetworkError', 'Failed to fetch'
         ];
         function shouldSuppress(msg) {
             const msgStr = String(msg).toLowerCase();
@@ -49,8 +50,21 @@
             if (shouldSuppress(msg)) { e.preventDefault(); e.stopPropagation(); return true; }
         }, true);
         window.addEventListener('unhandledrejection', function(e) {
-            if (shouldSuppress(String(e.reason || ''))) { e.preventDefault(); return true; }
+            const reason = String(e.reason || '');
+            if (shouldSuppress(reason)) { e.preventDefault(); return true; }
         });
+        
+        // Suppress "request aborted" and network errors globally
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+            return originalFetch.apply(this, args).catch(error => {
+                if (error && (error.message && error.message.toLowerCase().includes('aborted'))) {
+                    console.warn('Request aborted (suppressed)');
+                    return Promise.resolve(new Response(null, { status: 0 }));
+                }
+                throw error;
+            });
+        };
     })();
     </script>
 </head>
@@ -219,7 +233,8 @@
                     videos = await window.RajCreationSupabase.getVideos();
                     console.log('Loaded videos from Supabase:', videos.length);
                 } catch (error) {
-                    console.error('Error loading videos from Supabase:', error);
+                    // Silently handle errors - don't show alerts or popups
+                    console.warn('Could not load videos from Supabase, using localStorage fallback:', error.message);
                     // Fallback to localStorage
                 }
             }
@@ -285,7 +300,8 @@
                 try {
                     videos = await window.RajCreationSupabase.getVideos();
                 } catch (error) {
-                    console.error('Error loading videos from Supabase:', error);
+                    // Silently handle errors - don't show alerts or popups
+                    console.warn('Could not load videos from Supabase:', error.message);
                 }
             }
             
@@ -305,7 +321,7 @@
             }
             
             if (!video) {
-                alert('Video not found!');
+                console.warn('Video not found');
                 return;
             }
             
@@ -313,7 +329,7 @@
             const embedLink = video.embed_link || video.embedLink;
             
             if (!embedLink) {
-                alert('Video embed code not found!');
+                console.warn('Video embed code not found');
                 return;
             }
             
@@ -387,9 +403,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Wait for Supabase to initialize
             setTimeout(() => {
-                loadVideos();
+                try {
+                    loadVideos();
+                } catch (error) {
+                    // Silently handle any errors - no popups
+                    console.warn('Error loading videos (suppressed):', error.message);
+                }
             }, 500);
         });
+        
+        // Global error handler to prevent any popups
+        window.addEventListener('error', function(e) {
+            const errorMsg = (e.message || '').toLowerCase();
+            if (errorMsg.includes('request aborted') || errorMsg.includes('aborted')) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.warn('Request aborted error suppressed');
+                return true;
+            }
+        }, true);
     </script>
     <style>
         .video-card:hover {
