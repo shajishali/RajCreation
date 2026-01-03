@@ -1,0 +1,13 @@
+{
+  "name": "rajcreation-live",
+  "version": "1.0.0",
+  "description": "RajCreationz - Live Telecast Streaming Platform",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000"
+  },
+  "keywords": ["live-streaming", "telecast", "supabase"],
+  "author": "RajCreation",
+  "license": "MIT"
+}
+

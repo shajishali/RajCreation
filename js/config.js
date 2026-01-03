@@ -20,7 +20,7 @@
         
         // Site Configuration
         site: {
-            title: 'RajCreation Live',
+            title: 'RajCreationz',
             description: 'Watch live telecast streaming'
         },
         
