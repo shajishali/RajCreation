@@ -739,13 +739,20 @@
                     return;
                 } catch (error) {
                     console.error('❌ Error saving to Supabase:', error);
-                    console.error('Error details:', error.message);
-                    const errorMsg = error.message || 'Unknown error';
+                    console.error('Error details:', error);
+                    const errorMsg = error.message || error.code || 'Unknown error';
+                    const errorCode = error.code || '';
+                    
+                    // Check if table doesn't exist
+                    if (errorCode === 'PGRST205' || errorMsg.includes('does not exist') || errorMsg.includes('relation') || errorMsg.includes('table')) {
+                        showNotification('error', `❌ Videos table not found in Supabase! Please run the SQL script: supabase-videos-setup.sql`);
+                        return; // Don't fall back to localStorage - show error
+                    }
                     
                     // Check if we've exceeded max retries
                     if (retryCount >= MAX_RETRIES) {
-                        showNotification('warning', `⚠️ Maximum retry attempts (${MAX_RETRIES}) reached. Saving to local storage instead.`);
-                        // Fall through to localStorage save
+                        showNotification('error', `❌ Failed to save to Supabase after ${MAX_RETRIES} attempts. Error: ${errorMsg}. Please check your Supabase connection and table setup.`);
+                        return; // Don't silently fall back - show error
                     } else {
                         // Automatically retry without blocking dialog
                         showNotification('info', `⏳ Retrying Supabase save (Attempt ${retryCount + 1}/${MAX_RETRIES})...`);

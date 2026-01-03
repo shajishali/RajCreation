@@ -489,10 +489,24 @@
                     onConflict: 'id'
                 });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase save error:', error);
+                console.error('Error code:', error.code);
+                console.error('Error message:', error.message);
+                console.error('Error details:', error.details);
+                throw error;
+            }
             return { success: true, data };
         } catch (error) {
             console.error('Error saving video:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+            // Provide helpful error message if table doesn't exist
+            if (error.code === 'PGRST205' || error.message?.includes('does not exist') || error.message?.includes('relation')) {
+                const helpfulError = new Error('Videos table not found. Please run supabase-videos-setup.sql in your Supabase SQL Editor.');
+                helpfulError.code = error.code;
+                throw helpfulError;
+            }
             throw error;
         }
     }
