@@ -550,27 +550,91 @@
     async function saveLiveStreamEmbed(embedCode) {
         const client = getClient();
         if (!client) {
-            throw new Error('Supabase client not initialized');
+            throw new Error('Supabase client not initialized. Please check your Supabase configuration.');
+        }
+
+        // Validate embed code isn't too large (Supabase text field limit is ~1GB, but we'll cap at 1MB for safety)
+        if (embedCode && embedCode.length > 1024 * 1024) {
+            throw new Error('Embed code is too large (maximum 1MB). Please use a shorter embed code.');
         }
 
         try {
-            const { data, error } = await client
+            // Use upsert with simpler syntax that works better with PostgREST
+            // First try to update, then insert if it doesn't exist
+            const { data: updateData, error: updateError } = await client
                 .from('settings')
-                .upsert({
+                .update({
+                    value: embedCode,
+                    value_type: 'text',
+                    description: 'Live stream embed code',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('key', 'live_stream_embed')
+                .select();
+
+            // If update worked (found a record), return success
+            if (!updateError && updateData && updateData.length > 0) {
+                return { success: true, data: updateData };
+            }
+
+            // If update didn't find a record (or failed), try to insert
+            const { data: insertData, error: insertError } = await client
+                .from('settings')
+                .insert({
                     key: 'live_stream_embed',
                     value: embedCode,
                     value_type: 'text',
                     description: 'Live stream embed code',
                     updated_at: new Date().toISOString()
-                }, {
-                    onConflict: 'key'
-                });
+                })
+                .select();
 
-            if (error) throw error;
-            return { success: true, data };
+            if (insertError) {
+                // If insert fails and it's a unique constraint violation, the record exists
+                // Try update one more time as a fallback
+                if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
+                    const { data: retryData, error: retryError } = await client
+                        .from('settings')
+                        .update({
+                            value: embedCode,
+                            value_type: 'text',
+                            description: 'Live stream embed code',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('key', 'live_stream_embed')
+                        .select();
+                    
+                    if (retryError) throw retryError;
+                    return { success: true, data: retryData };
+                }
+                throw insertError;
+            }
+
+            return { success: true, data: insertData };
         } catch (error) {
             console.error('Error saving live stream embed:', error);
-            throw error;
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint
+            });
+            
+            // Provide more helpful error messages
+            if (error.message && (error.message.includes('fetch') || error.message.includes('NetworkError'))) {
+                throw new Error('Network error: Unable to connect to Supabase. Please check:\n1. Your internet connection\n2. Supabase URL and API key in config.js\n3. CORS settings in Supabase Dashboard');
+            }
+            
+            if (error.message && (error.message.includes('permission') || error.message.includes('policy') || error.message.includes('RLS'))) {
+                throw new Error('Permission denied: The settings table may have Row Level Security enabled. Please run supabase-schema.sql or supabase-complete-setup.sql to set up proper permissions.');
+            }
+            
+            if (error.message && (error.message.includes('relation') || error.message.includes('does not exist') || error.code === '42P01')) {
+                throw new Error('Settings table not found: Please run supabase-schema.sql or supabase-complete-setup.sql in your Supabase SQL Editor to create the settings table.');
+            }
+            
+            // Re-throw with original message if we can't provide a better one
+            throw new Error(error.message || 'Unknown error occurred while saving embed code');
         }
     }
 
