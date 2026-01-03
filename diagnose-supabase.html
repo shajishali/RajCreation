@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Supabase Diagnostic</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #0f0;
+        }
+        h1 { color: #ff4444; }
+        .step {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { background: rgba(76, 175, 80, 0.2); border: 1px solid #4caf50; color: #4caf50; }
+        .error { background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; color: #f44336; }
+        .info { background: rgba(33, 150, 243, 0.2); border: 1px solid #2196f3; color: #2196f3; }
+        .warning { background: rgba(255, 152, 0, 0.2); border: 1px solid #ff9800; color: #ff9800; }
+        button {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover { background: #ff6666; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #000;
+            color: #0f0;
+            border: 1px solid #333;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        label { display: block; margin-top: 15px; color: #fff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Detailed Supabase Diagnostic</h1>
+
+    <div class="step">
+        <h2>Step 1: Check Current Configuration</h2>
+        <div id="step1Result"></div>
+        <button onclick="checkCurrentConfig()">Check Config</button>
+    </div>
+
+    <div class="step">
+        <h2>Step 2: Test Basic Connection</h2>
+        <div id="step2Result"></div>
+        <button onclick="testBasicConnection()">Test Basic Connection</button>
+    </div>
+
+    <div class="step">
+        <h2>Step 3: Check If Settings Table Exists</h2>
+        <div id="step3Result"></div>
+        <button onclick="checkSettingsTable()">Check Settings Table</button>
+    </div>
+
+    <div class="step">
+        <h2>Step 4: Verify Supabase Credentials</h2>
+        <p style="color: #fff;">If all tests above fail, your Supabase credentials might be wrong. Let's verify:</p>
+        
+        <label>Supabase Project URL:</label>
+        <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co">
+        
+        <label>Supabase Anon Key:</label>
+        <input type="text" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        
+        <div id="step4Result"></div>
+        <button onclick="testCustomCredentials()">Test These Credentials</button>
+        <button onclick="showHowToGetCredentials()">How to Get Credentials?</button>
+    </div>
+
+    <div class="step">
+        <h2>Step 5: Instructions</h2>
+        <div id="instructionsResult"></div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        function showResult(elementId, message, type = 'info') {
+            document.getElementById(elementId).innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        // Step 1: Check current configuration
+        function checkCurrentConfig() {
+            try {
+                const config = window.RAJ_CREATION_CONFIG?.supabase;
+                
+                if (!config) {
+                    showResult('step1Result', 
+                        '❌ ERROR: No Supabase configuration found!\n\n' +
+                        'The file js/config.js is not loaded or doesn\'t contain Supabase config.\n\n' +
+                        'Expected: window.RAJ_CREATION_CONFIG.supabase = { url: "...", anonKey: "..." }',
+                        'error'
+                    );
+                    return;
+                }
+
+                const hasUrl = config.url && config.url.length > 0;
+                const hasKey = config.anonKey && config.anonKey.length > 0;
+                const urlLooksValid = config.url?.includes('supabase.co');
+
+                let result = '📋 Current Configuration:\n\n';
+                result += `URL: ${config.url || '(missing)'}\n`;
+                result += `Length: ${config.url?.length || 0} characters\n`;
+                result += `Valid format: ${urlLooksValid ? '✅' : '❌'}\n\n`;
+                result += `Anon Key: ${config.anonKey?.substring(0, 30)}...\n`;
+                result += `Length: ${config.anonKey?.length || 0} characters\n\n`;
+
+                if (hasUrl && hasKey && urlLooksValid) {
+                    result += '✅ Configuration looks valid!\n\n';
+                    result += 'If you\'re still getting errors, the issue is likely:\n';
+                    result += '1. Settings table doesn\'t exist (run SQL script)\n';
+                    result += '2. Wrong project URL or key\n';
+                    result += '3. CORS issue in Supabase dashboard';
+                    showResult('step1Result', result, 'success');
+                } else {
+                    result += '❌ Configuration has issues!\n\n';
+                    if (!hasUrl) result += '- URL is missing\n';
+                    if (!urlLooksValid) result += '- URL format is invalid\n';
+                    if (!hasKey) result += '- Anon Key is missing\n';
+                    showResult('step1Result', result, 'error');
+                }
+            } catch (error) {
+                showResult('step1Result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Step 2: Test basic connection
+        async function testBasicConnection() {
+            try {
+                const config = window.RAJ_CREATION_CONFIG?.supabase;
+                if (!config?.url || !config?.anonKey) {
+                    showResult('step2Result', '❌ Cannot test: Configuration is missing', 'error');
+                    return;
+                }
+
+                showResult('step2Result', '⏳ Testing connection...', 'info');
+
+                const client = supabase.createClient(config.url, config.anonKey);
+                
+                // Try to make any simple query
+                const { data, error } = await client.from('settings').select('count');
+
+                if (error) {
+                    let result = '❌ Connection Failed!\n\n';
+                    result += `Error Message: ${error.message}\n`;
+                    result += `Error Code: ${error.code || 'none'}\n`;
+                    result += `Error Details: ${error.details || 'none'}\n\n`;
+                    
+                    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        result += '🔍 This is a NETWORK ERROR. Possible causes:\n\n';
+                        result += '1. ❌ Settings table doesn\'t exist\n';
+                        result += '   → Solution: Run supabase-complete-setup.sql in Supabase SQL Editor\n\n';
+                        result += '2. ❌ Wrong Supabase URL\n';
+                        result += '   → Solution: Check your Supabase project URL\n\n';
+                        result += '3. ❌ CORS not configured\n';
+                        result += '   → Solution: Check Supabase Dashboard → Settings → API → CORS\n\n';
+                        result += '4. ❌ Wrong API key\n';
+                        result += '   → Solution: Get the correct anon/public key from Supabase';
+                    }
+                    
+                    showResult('step2Result', result, 'error');
+                } else {
+                    showResult('step2Result', 
+                        '✅ Connection Successful!\n\n' +
+                        'Your Supabase connection works!\n' +
+                        'You can now save thumbnails and embed codes.',
+                        'success'
+                    );
+                }
+            } catch (error) {
+                showResult('step2Result', 
+                    `❌ Unexpected Error: ${error.message}\n\n` +
+                    `This usually means the Supabase client couldn't be initialized.\n` +
+                    `Check your URL and API key.`,
+                    'error'
+                );
+            }
+        }
+
+        // Step 3: Check settings table
+        async function checkSettingsTable() {
+            try {
+                const config = window.RAJ_CREATION_CONFIG?.supabase;
+                if (!config?.url || !config?.anonKey) {
+                    showResult('step3Result', '❌ Cannot test: Configuration is missing', 'error');
+                    return;
+                }
+
+                showResult('step3Result', '⏳ Checking settings table...', 'info');
+
+                const client = supabase.createClient(config.url, config.anonKey);
+                const { data, error } = await client.from('settings').select('*').limit(1);
+
+                if (error) {
+                    let result = '❌ Settings Table Check Failed!\n\n';
+                    result += `Error: ${error.message}\n\n`;
+                    
+                    if (error.code === '42P01' || error.message.includes('does not exist')) {
+                        result += '🎯 FOUND THE PROBLEM!\n\n';
+                        result += 'The "settings" table DOES NOT EXIST in your database.\n\n';
+                        result += '✅ SOLUTION:\n';
+                        result += '1. Go to https://supabase.com/dashboard\n';
+                        result += '2. Select your project\n';
+                        result += '3. Click "SQL Editor" in sidebar\n';
+                        result += '4. Copy ALL contents from: supabase-complete-setup.sql\n';
+                        result += '5. Paste in SQL Editor and click RUN\n';
+                        result += '6. Come back here and test again';
+                    } else if (error.message.includes('permission') || error.message.includes('policy')) {
+                        result += '🎯 FOUND THE PROBLEM!\n\n';
+                        result += 'Table exists but RLS policies are blocking access.\n\n';
+                        result += '✅ SOLUTION: Run supabase-complete-setup.sql in SQL Editor';
+                    }
+                    
+                    showResult('step3Result', result, 'error');
+                } else {
+                    showResult('step3Result', 
+                        '✅ Settings Table Exists!\n\n' +
+                        `Found ${data?.length || 0} rows.\n` +
+                        'Your database is set up correctly!',
+                        'success'
+                    );
+                }
+            } catch (error) {
+                showResult('step3Result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Step 4: Test custom credentials
+        async function testCustomCredentials() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+
+            if (!url || !key) {
+                showResult('step4Result', '❌ Please enter both URL and API key', 'error');
+                return;
+            }
+
+            try {
+                showResult('step4Result', '⏳ Testing custom credentials...', 'info');
+
+                const client = supabase.createClient(url, key);
+                const { data, error } = await client.from('settings').select('count');
+
+                if (error) {
+                    showResult('step4Result', 
+                        `❌ Test Failed: ${error.message}\n\n` +
+                        'These credentials don\'t work. Please verify:\n' +
+                        '1. URL format: https://xxxxx.supabase.co\n' +
+                        '2. Key is the anon/public key (not service role key)',
+                        'error'
+                    );
+                } else {
+                    showResult('step4Result', 
+                        '✅ Credentials Work!\n\n' +
+                        'Update js/config.js with these values:\n\n' +
+                        `url: '${url}',\n` +
+                        `anonKey: '${key.substring(0, 50)}...'`,
+                        'success'
+                    );
+                }
+            } catch (error) {
+                showResult('step4Result', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showHowToGetCredentials() {
+            showResult('step4Result', 
+                '📝 How to Get Supabase Credentials:\n\n' +
+                '1. Go to: https://supabase.com/dashboard\n' +
+                '2. Sign in to your account\n' +
+                '3. Select your project\n' +
+                '4. Click the ⚙️ SETTINGS icon (bottom left)\n' +
+                '5. Click "API" in the settings menu\n' +
+                '6. You\'ll see:\n' +
+                '   - Project URL (copy this)\n' +
+                '   - anon/public key (copy this)\n\n' +
+                '⚠️ DO NOT use the service_role key!\n' +
+                '✅ Use the anon key (also called public key)',
+                'info'
+            );
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkCurrentConfig();
+                showResult('instructionsResult', 
+                    '📋 QUICK START:\n\n' +
+                    '1. Click "Check Config" to verify settings\n' +
+                    '2. Click "Test Basic Connection"\n' +
+                    '3. If it fails, click "Check Settings Table"\n' +
+                    '4. Follow the solution shown in the error message\n\n' +
+                    '💡 Most common issue: Settings table doesn\'t exist\n' +
+                    '   Solution: Run supabase-complete-setup.sql in Supabase SQL Editor',
+                    'info'
+                );
+            }, 500);
+        });
+    </script>
+</body>
+</html>
+

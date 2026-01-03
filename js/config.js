@@ -14,7 +14,7 @@
     // Supabase Configuration
     window.RAJ_CREATION_CONFIG = {
         supabase: {
-            url: 'https://tryjfnrlmdbuhljlligi.supabase.co',
+            url: 'https://ahxqgrdiyfjsmjrkibdg.supabase.co',
             anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoeHFncmRpeWZuc21qcmtpYmRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNDQ4MjksImV4cCI6MjA4MjkyMDgyOX0.dHS0r8_m4yOcGoItWZzpZie2H9Lt-edi4zPnlDd72VI'
         },
         
