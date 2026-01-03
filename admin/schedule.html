@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Schedule Management - RajCreationz</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .admin-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+        }
+
+        .admin-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .events-table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .events-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .events-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .events-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .event-status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-upcoming {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-past {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-live {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-cancelled {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        .recurring-badge {
+            background: #cfe2ff;
+            color: #084298;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6c757d;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .modal-footer {
+            padding: 20px 30px;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-actions {
+                flex-direction: column;
+            }
+
+            .events-table-container {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>📅 Schedule Management</h1>
+            <p>Manage your live stream events and schedules</p>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <div class="admin-actions">
+            <button class="btn btn-primary" id="addEventBtn">
+                ➕ Add New Event
+            </button>
+            <button class="btn btn-secondary" id="refreshBtn">
+                🔄 Refresh
+            </button>
+            <a href="../schedule.html" class="btn btn-secondary" target="_blank">
+                👁️ View Public Schedule
+            </a>
+            <a href="index.html" class="btn btn-secondary">
+                ⬅️ Back to Admin
+            </a>
+        </div>
+
+        <div class="events-table-container">
+            <div id="loadingState" class="loading">
+                <div>Loading events...</div>
+            </div>
+
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📭</div>
+                <h3>No Events Yet</h3>
+                <p>Click "Add New Event" to create your first scheduled event.</p>
+            </div>
+
+            <table class="events-table" id="eventsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Title</th>
+                        <th>Time</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="eventsTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Event Modal -->
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Event</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <input type="hidden" id="eventId">
+
+                    <div class="form-group">
+                        <label for="eventTitle">Event Title *</label>
+                        <input type="text" id="eventTitle" required placeholder="e.g., New Year Special Program">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventDescription">Description</label>
+                        <textarea id="eventDescription" placeholder="Enter event description..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eventDate">Date *</label>
+                            <input type="date" id="eventDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="eventCategory">Category *</label>
+                            <select id="eventCategory" required>
+                                <option value="Regular Show">Regular Show</option>
+                                <option value="Special Event">Special Event</option>
+                                <option value="Discussion">Discussion</option>
+                                <option value="Workshop">Workshop</option>
+                                <option value="Live Performance">Live Performance</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eventStartTime">Start Time *</label>
+                            <input type="time" id="eventStartTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="eventEndTime">End Time *</label>
+                            <input type="time" id="eventEndTime" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="eventTimezone">Timezone</label>
+                            <input type="text" id="eventTimezone" value="IST (UTC+5:30)">
+                        </div>
+                        <div class="form-group">
+                            <label for="eventStatus">Status *</label>
+                            <select id="eventStatus" required>
+                                <option value="upcoming">Upcoming</option>
+                                <option value="live">Live</option>
+                                <option value="past">Past</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventLocation">Location (Optional)</label>
+                        <input type="text" id="eventLocation" placeholder="e.g., Online, Studio A">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="eventRecurring">
+                            <label for="eventRecurring">Recurring Event</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="recurringPatternGroup" style="display: none;">
+                        <label for="eventRecurringPattern">Recurring Pattern</label>
+                        <select id="eventRecurringPattern">
+                            <option value="">Select pattern</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventVideoUrl">Video URL (For past events)</label>
+                        <input type="url" id="eventVideoUrl" placeholder="https://...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="modalSaveBtn">Save Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script>
+        // Admin Schedule Management
+        (function() {
+            'use strict';
+
+            let events = [];
+            let editingEventId = null;
+
+            // DOM Elements
+            const addEventBtn = document.getElementById('addEventBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const eventModal = document.getElementById('eventModal');
+            const modalClose = document.getElementById('modalClose');
+            const modalCancelBtn = document.getElementById('modalCancelBtn');
+            const modalSaveBtn = document.getElementById('modalSaveBtn');
+            const eventForm = document.getElementById('eventForm');
+            const eventsTable = document.getElementById('eventsTable');
+            const eventsTableBody = document.getElementById('eventsTableBody');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+            const messageContainer = document.getElementById('messageContainer');
+            const modalTitle = document.getElementById('modalTitle');
+            const eventRecurring = document.getElementById('eventRecurring');
+            const recurringPatternGroup = document.getElementById('recurringPatternGroup');
+
+            // Initialize
+            init();
+
+            function init() {
+                setupEventListeners();
+                loadEvents();
+            }
+
+            function setupEventListeners() {
+                addEventBtn.addEventListener('click', () => openModal());
+                refreshBtn.addEventListener('click', loadEvents);
+                modalClose.addEventListener('click', closeModal);
+                modalCancelBtn.addEventListener('click', closeModal);
+                modalSaveBtn.addEventListener('click', saveEvent);
+                eventRecurring.addEventListener('change', toggleRecurringPattern);
+                
+                // Close modal on outside click
+                eventModal.addEventListener('click', (e) => {
+                    if (e.target === eventModal) closeModal();
+                });
+            }
+
+            function toggleRecurringPattern() {
+                recurringPatternGroup.style.display = eventRecurring.checked ? 'block' : 'none';
+            }
+
+            async function loadEvents() {
+                try {
+                    showLoading();
+                    events = await window.RajCreationSupabase.getScheduleEvents();
+                    displayEvents();
+                } catch (error) {
+                    console.error('Error loading events:', error);
+                    showError('Failed to load events. Please check your Supabase connection.');
+                    showEmpty();
+                }
+            }
+
+            function displayEvents() {
+                loadingState.style.display = 'none';
+
+                if (events.length === 0) {
+                    showEmpty();
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                eventsTable.style.display = 'table';
+                eventsTableBody.innerHTML = '';
+
+                events.forEach(event => {
+                    const row = createEventRow(event);
+                    eventsTableBody.appendChild(row);
+                });
+            }
+
+            function createEventRow(event) {
+                const tr = document.createElement('tr');
+                
+                const eventDate = new Date(event.event_date);
+                const formattedDate = eventDate.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
+
+                const statusClass = `status-${event.status}`;
+                const recurringBadge = event.is_recurring ? '<span class="recurring-badge">🔄 Recurring</span>' : '';
+
+                tr.innerHTML = `
+                    <td><strong>${formattedDate}</strong></td>
+                    <td>
+                        ${event.title}
+                        ${recurringBadge}
+                    </td>
+                    <td>${event.start_time.substring(0, 5)} - ${event.end_time.substring(0, 5)}</td>
+                    <td>${event.category}</td>
+                    <td><span class="event-status-badge ${statusClass}">${event.status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="editEvent('${event.id}')">✏️ Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteEvent('${event.id}')">🗑️ Delete</button>
+                        </div>
+                    </td>
+                `;
+
+                return tr;
+            }
+
+            function openModal(eventId = null) {
+                editingEventId = eventId;
+                
+                if (eventId) {
+                    modalTitle.textContent = 'Edit Event';
+                    const event = events.find(e => e.id === eventId);
+                    if (event) populateForm(event);
+                } else {
+                    modalTitle.textContent = 'Add New Event';
+                    eventForm.reset();
+                    document.getElementById('eventTimezone').value = 'IST (UTC+5:30)';
+                    document.getElementById('eventStatus').value = 'upcoming';
+                }
+
+                eventModal.classList.add('active');
+            }
+
+            function closeModal() {
+                eventModal.classList.remove('active');
+                eventForm.reset();
+                editingEventId = null;
+            }
+
+            function populateForm(event) {
+                document.getElementById('eventId').value = event.id;
+                document.getElementById('eventTitle').value = event.title;
+                document.getElementById('eventDescription').value = event.description || '';
+                document.getElementById('eventDate').value = event.event_date;
+                document.getElementById('eventStartTime').value = event.start_time;
+                document.getElementById('eventEndTime').value = event.end_time;
+                document.getElementById('eventTimezone').value = event.timezone || 'IST (UTC+5:30)';
+                document.getElementById('eventCategory').value = event.category;
+                document.getElementById('eventStatus').value = event.status;
+                document.getElementById('eventLocation').value = event.location || '';
+                document.getElementById('eventRecurring').checked = event.is_recurring;
+                document.getElementById('eventRecurringPattern').value = event.recurring_pattern || '';
+                document.getElementById('eventVideoUrl').value = event.video_url || '';
+                
+                toggleRecurringPattern();
+            }
+
+            async function saveEvent() {
+                try {
+                    const eventData = {
+                        title: document.getElementById('eventTitle').value,
+                        description: document.getElementById('eventDescription').value,
+                        event_date: document.getElementById('eventDate').value,
+                        start_time: document.getElementById('eventStartTime').value,
+                        end_time: document.getElementById('eventEndTime').value,
+                        timezone: document.getElementById('eventTimezone').value,
+                        category: document.getElementById('eventCategory').value,
+                        status: document.getElementById('eventStatus').value,
+                        location: document.getElementById('eventLocation').value || null,
+                        is_recurring: document.getElementById('eventRecurring').checked,
+                        recurring_pattern: document.getElementById('eventRecurring').checked ? 
+                            document.getElementById('eventRecurringPattern').value : null,
+                        video_url: document.getElementById('eventVideoUrl').value || null
+                    };
+
+                    if (editingEventId) {
+                        eventData.id = editingEventId;
+                    }
+
+                    await window.RajCreationSupabase.saveScheduleEvent(eventData);
+                    
+                    showSuccess(editingEventId ? 'Event updated successfully!' : 'Event created successfully!');
+                    closeModal();
+                    loadEvents();
+                } catch (error) {
+                    console.error('Error saving event:', error);
+                    showError(error.message || 'Failed to save event');
+                }
+            }
+
+            async function deleteEventConfirm(eventId) {
+                if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+                    return;
+                }
+
+                try {
+                    await window.RajCreationSupabase.deleteScheduleEvent(eventId);
+                    showSuccess('Event deleted successfully!');
+                    loadEvents();
+                } catch (error) {
+                    console.error('Error deleting event:', error);
+                    showError('Failed to delete event');
+                }
+            }
+
+            function showLoading() {
+                loadingState.style.display = 'block';
+                eventsTable.style.display = 'none';
+                emptyState.style.display = 'none';
+            }
+
+            function showEmpty() {
+                loadingState.style.display = 'none';
+                eventsTable.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+
+            function showError(message) {
+                messageContainer.innerHTML = `<div class="error-message">❌ ${message}</div>`;
+                setTimeout(() => messageContainer.innerHTML = '', 5000);
+            }
+
+            function showSuccess(message) {
+                messageContainer.innerHTML = `<div class="success-message">✅ ${message}</div>`;
+                setTimeout(() => messageContainer.innerHTML = '', 3000);
+            }
+
+            // Expose functions globally
+            window.editEvent = openModal;
+            window.deleteEvent = deleteEventConfirm;
+
+        })();
+    </script>
+</body>
+</html>
+

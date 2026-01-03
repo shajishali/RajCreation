@@ -685,6 +685,157 @@
         }
     }
 
+    /**
+     * Save Schedule Event
+     */
+    async function saveScheduleEvent(eventData) {
+        const client = getClient();
+        if (!client) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        try {
+            // If event has an ID, update it; otherwise, insert new
+            if (eventData.id) {
+                const { data, error } = await client
+                    .from('schedule_events')
+                    .update({
+                        title: eventData.title,
+                        description: eventData.description || '',
+                        event_date: eventData.event_date,
+                        start_time: eventData.start_time,
+                        end_time: eventData.end_time,
+                        timezone: eventData.timezone || 'IST (UTC+5:30)',
+                        category: eventData.category || 'Regular Show',
+                        status: eventData.status || 'upcoming',
+                        is_recurring: eventData.is_recurring || false,
+                        recurring_pattern: eventData.recurring_pattern || null,
+                        location: eventData.location || null,
+                        video_url: eventData.video_url || null
+                    })
+                    .eq('id', eventData.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return { success: true, data };
+            } else {
+                const { data, error } = await client
+                    .from('schedule_events')
+                    .insert({
+                        title: eventData.title,
+                        description: eventData.description || '',
+                        event_date: eventData.event_date,
+                        start_time: eventData.start_time,
+                        end_time: eventData.end_time,
+                        timezone: eventData.timezone || 'IST (UTC+5:30)',
+                        category: eventData.category || 'Regular Show',
+                        status: eventData.status || 'upcoming',
+                        is_recurring: eventData.is_recurring || false,
+                        recurring_pattern: eventData.recurring_pattern || null,
+                        location: eventData.location || null,
+                        video_url: eventData.video_url || null
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return { success: true, data };
+            }
+        } catch (error) {
+            console.error('Error saving schedule event:', error);
+            
+            if (error.message && error.message.includes('relation') || error.code === '42P01') {
+                throw new Error('Schedule events table not found. Please run supabase-schedule-setup.sql in your Supabase SQL Editor.');
+            }
+            
+            throw error;
+        }
+    }
+
+    /**
+     * Get Schedule Events
+     */
+    async function getScheduleEvents(filters = {}) {
+        const client = getClient();
+        if (!client) {
+            return [];
+        }
+
+        try {
+            let query = client
+                .from('schedule_events')
+                .select('*')
+                .order('event_date', { ascending: true });
+
+            // Apply filters
+            if (filters.status) {
+                query = query.eq('status', filters.status);
+            }
+            if (filters.is_recurring !== undefined) {
+                query = query.eq('is_recurring', filters.is_recurring);
+            }
+            if (filters.category) {
+                query = query.eq('category', filters.category);
+            }
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error getting schedule events:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Single Schedule Event
+     */
+    async function getScheduleEvent(eventId) {
+        const client = getClient();
+        if (!client) {
+            return null;
+        }
+
+        try {
+            const { data, error } = await client
+                .from('schedule_events')
+                .select('*')
+                .eq('id', eventId)
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error getting schedule event:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Delete Schedule Event
+     */
+    async function deleteScheduleEvent(eventId) {
+        const client = getClient();
+        if (!client) {
+            throw new Error('Supabase client not initialized');
+        }
+
+        try {
+            const { error } = await client
+                .from('schedule_events')
+                .delete()
+                .eq('id', eventId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting schedule event:', error);
+            throw error;
+        }
+    }
+
     // Initialize when loaded
     // Note: Supabase script must be loaded first
     if (typeof supabase !== 'undefined') {
@@ -701,6 +852,10 @@
         saveLiveStreamEmbed: saveLiveStreamEmbed,
         getLiveStreamEmbed: getLiveStreamEmbed,
         deleteLiveStreamEmbed: deleteLiveStreamEmbed,
+        saveScheduleEvent: saveScheduleEvent,
+        getScheduleEvents: getScheduleEvents,
+        getScheduleEvent: getScheduleEvent,
+        deleteScheduleEvent: deleteScheduleEvent,
         saveEvent: saveEvent,
         getEvents: getEvents,
         deleteEvent: deleteEvent,
