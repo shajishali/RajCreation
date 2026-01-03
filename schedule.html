@@ -126,100 +126,10 @@
                 <!-- List View -->
                 <div class="schedule-list-view active" id="scheduleListView">
                     <div class="schedule-events" id="scheduleEvents">
-                        <!-- Event Item 1 -->
-                        <div class="schedule-event-item" data-date="2024-12-31" data-category="upcoming" data-recurring="false">
-                            <div class="event-date-badge">
-                                <span class="event-day">31</span>
-                                <span class="event-month">Dec</span>
-                            </div>
-                            <div class="event-details">
-                                <div class="event-header">
-                                    <h3 class="event-title">New Year Special Program</h3>
-                                    <span class="event-status upcoming">🔴 Upcoming</span>
-                                </div>
-                                <div class="event-meta">
-                                    <span class="event-time">⏰ 8:00 PM - 10:00 PM</span>
-                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
-                                    <span class="event-category">📁 Special Event</span>
-                                </div>
-                                <p class="event-description">Join us for a special New Year celebration program with live performances and entertainment.</p>
-                                <div class="event-actions">
-                                    <button class="event-reminder-btn" data-event-id="1">🔔 Set Reminder</button>
-                                    <button class="event-export-btn" data-event-id="1">📥 Add to Calendar</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Event Item 2 -->
-                        <div class="schedule-event-item" data-date="2025-01-05" data-category="upcoming" data-recurring="false">
-                            <div class="event-date-badge">
-                                <span class="event-day">05</span>
-                                <span class="event-month">Jan</span>
-                            </div>
-                            <div class="event-details">
-                                <div class="event-header">
-                                    <h3 class="event-title">Weekly Live Show</h3>
-                                    <span class="event-status upcoming">🔴 Upcoming</span>
-                                </div>
-                                <div class="event-meta">
-                                    <span class="event-time">⏰ 7:00 PM - 9:00 PM</span>
-                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
-                                    <span class="event-category">📁 Regular Show</span>
-                                </div>
-                                <p class="event-description">Our weekly live show featuring special guests and interactive sessions.</p>
-                                <div class="event-actions">
-                                    <button class="event-reminder-btn" data-event-id="2">🔔 Set Reminder</button>
-                                    <button class="event-export-btn" data-event-id="2">📥 Add to Calendar</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Event Item 3 (Past) -->
-                        <div class="schedule-event-item" data-date="2024-12-25" data-category="past" data-recurring="false">
-                            <div class="event-date-badge past">
-                                <span class="event-day">25</span>
-                                <span class="event-month">Dec</span>
-                            </div>
-                            <div class="event-details">
-                                <div class="event-header">
-                                    <h3 class="event-title">Christmas Special Program</h3>
-                                    <span class="event-status past">✅ Completed</span>
-                                </div>
-                                <div class="event-meta">
-                                    <span class="event-time">⏰ 6:00 PM - 8:30 PM</span>
-                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
-                                    <span class="event-category">📁 Special Event</span>
-                                </div>
-                                <p class="event-description">Christmas celebration program with festive performances.</p>
-                                <div class="event-actions">
-                                    <a href="video.html" class="event-watch-btn">▶ Watch Recording</a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Event Item 4 (Recurring) -->
-                        <div class="schedule-event-item" data-date="2025-01-12" data-category="upcoming" data-recurring="true">
-                            <div class="event-date-badge">
-                                <span class="event-day">12</span>
-                                <span class="event-month">Jan</span>
-                            </div>
-                            <div class="event-details">
-                                <div class="event-header">
-                                    <h3 class="event-title">Monthly Discussion Forum</h3>
-                                    <span class="event-status upcoming">🔴 Upcoming</span>
-                                    <span class="event-recurring-badge">🔄 Recurring</span>
-                                </div>
-                                <div class="event-meta">
-                                    <span class="event-time">⏰ 5:00 PM - 7:00 PM</span>
-                                    <span class="event-timezone">🌍 IST (UTC+5:30)</span>
-                                    <span class="event-category">📁 Discussion</span>
-                                </div>
-                                <p class="event-description">Monthly discussion forum on current topics. Repeats every month.</p>
-                                <div class="event-actions">
-                                    <button class="event-reminder-btn" data-event-id="4">🔔 Set Reminder</button>
-                                    <button class="event-export-btn" data-event-id="4">📥 Add to Calendar</button>
-                                </div>
-                            </div>
+                        <!-- Events will be loaded dynamically from Supabase -->
+                        <div style="text-align: center; padding: 60px 20px; color: #b0b0b0;">
+                            <div style="font-size: 48px; margin-bottom: 20px;">📅</div>
+                            <p>Loading events...</p>
                         </div>
                     </div>
                 </div>
