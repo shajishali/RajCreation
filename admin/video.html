@@ -709,7 +709,7 @@
             }
             
             if (!thumbnail) {
-                alert('Please upload a thumbnail image or enter a URL!');
+                showNotification('error', '❌ Please upload a thumbnail image or enter a URL!');
                 return;
             }
             
@@ -741,20 +741,18 @@
                     console.error('❌ Error saving to Supabase:', error);
                     console.error('Error details:', error.message);
                     const errorMsg = error.message || 'Unknown error';
-                    showNotification('error', `⚠️ Supabase save failed: ${errorMsg}. Check browser console for details.`);
                     
                     // Check if we've exceeded max retries
                     if (retryCount >= MAX_RETRIES) {
-                        alert(`⚠️ Maximum retry attempts (${MAX_RETRIES}) reached.\n\nSaving to local storage instead. Please check your Supabase connection and try again later.`);
+                        showNotification('warning', `⚠️ Maximum retry attempts (${MAX_RETRIES}) reached. Saving to local storage instead.`);
                         // Fall through to localStorage save
                     } else {
-                        // Ask user if they want to retry or save to localStorage
-                        const retryMessage = `Failed to save to Supabase (Attempt ${retryCount + 1}/${MAX_RETRIES}).\n\nWould you like to:\n\nOK = Retry saving to Supabase\nCancel = Save to local storage instead`;
-                        if (confirm(retryMessage)) {
-                            // Retry with incremented counter
-                            return saveVideo(event, retryCount + 1);
-                        }
-                        // User chose to cancel, fall through to localStorage save
+                        // Automatically retry without blocking dialog
+                        showNotification('info', `⏳ Retrying Supabase save (Attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+                        // Wait a bit before retry
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        // Retry with incremented counter
+                        return saveVideo(event, retryCount + 1);
                     }
                 }
             } else {
@@ -783,11 +781,9 @@
             }
             
             localStorage.setItem('recordedVideosList', JSON.stringify(videos));
+            showNotification('success', '✅ Video saved to local storage! (Note: Will only be visible on this device)');
             closeModal();
             loadVideos();
-            
-            // Show success message
-            alert('✅ Video saved successfully!');
         }
         
         // Show notification
